@@ -154,10 +154,3 @@ FIREBASE_API_KEY=your_firebase_key
 | `main` | Phiên bản chính (Tenant + Landlord) |
 | `feature/admin-management` | Phát triển tính năng Admin |
 
----
-
-
-## 📞 Liên Hệ
-
-- **GitHub:** [HoangThaNHty](https://github.com/HoangThaNHty)
-- **Email:** nguyenhoangthanhty.2503@gmail.com
