@@ -1,0 +1,10 @@
+# IDE
+.idea/
+
+# Backup
+*.zip
+*.code-workspace
+
+# Git
+.git/
+.github/

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "811189587924",
+    "firebase_url": "https://doannhomdomchua-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "doannhomdomchua",
+    "storage_bucket": "doannhomdomchua.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811189587924:android:7b5240aa7f4a7558ea9041",
+        "android_client_info": {
+          "package_name": "com.example.ung_thue_phong_tro_qtanphu_tphcm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "811189587924-3bkbfan55n6mfurp2275ndkv3air06r8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ung_thue_phong_tro_qtanphu_tphcm",
+            "certificate_hash": "a1b1c25d415c4861f0048935d702aead3c7b33d9"
+          }
+        },
+        {
+          "client_id": "811189587924-ft0npbm9igcispa3n74huhuq808autfo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4WBPJHmADW5lo1Q-tTykBYGm7avpysZ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "811189587924-ft0npbm9igcispa3n74huhuq808autfo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

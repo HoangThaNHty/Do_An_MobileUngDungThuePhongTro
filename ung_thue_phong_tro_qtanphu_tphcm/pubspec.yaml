@@ -1,0 +1,58 @@
+name: ung_thue_phong_tro_qtanphu_tphcm
+description: "Ứng dụng cho thuê phòng trọ - Quận Tân Phú, TP.HCM"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Material 3 + Google Fonts
+  google_fonts: ^6.1.0
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+
+  # Navigation
+  go_router: ^12.1.1
+
+  # Firebase
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  firebase_database: ^12.3.0
+  google_sign_in: ^6.1.6
+  firebase_storage: ^13.3.0
+
+  # Maps
+  google_maps_flutter: ^2.5.3
+  geolocator: ^10.1.0
+
+  # Image
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.7
+
+  # Charts
+  fl_chart: ^0.66.2
+
+  # Utils
+  intl: ^0.19.0
+  logger: ^2.0.2+1
+  shimmer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - roomJPG/
+    - assets/images/
