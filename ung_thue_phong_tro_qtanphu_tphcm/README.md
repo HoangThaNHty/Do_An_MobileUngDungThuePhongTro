@@ -130,11 +130,7 @@ flutter run
 ## ⚙️ Cấu Hình
 
 ### Firebase
-1. Tạo project Firebase tại [console.firebase.google.com](https://console.firebase.google.com)
-2. Bật **Authentication** (Email/Password)
-3. Bật **Firestore Database**
-4. Tải `google-services.json` (Android) / `GoogleService-Info.plist` (iOS)
-5. Đặt trong thư mục `android/app/` hoặc `ios/Runner/`
+
 
 ### Google Maps API
 1. Lấy API Key tại [Google Cloud Console](https://console.cloud.google.com)
@@ -150,25 +146,6 @@ GOOGLE_MAPS_API_KEY=your_api_key
 FIREBASE_API_KEY=your_firebase_key
 ```
 
----
-
-## 🔄 Quy Trình Làm Việc Với Git
-
-```bash
-# 1. Tạo branch mới cho feature
-git checkout -b feature/ten-feature
-
-# 2. Làm việc và commit
-git add .
-git commit -m "Mô tả công việc"
-
-# 3. Push lên remote
-git push origin feature/ten-feature
-
-# 4. Tạo Pull Request trên GitHub để merge vào main
-```
-
----
 
 ## 📝 Các Branch Hiện Tại
 
@@ -179,17 +156,6 @@ git push origin feature/ten-feature
 
 ---
 
-## 🤝 Đóng Góp
-
-Dự án này là bài tập lớn môn học. Mọi đóng góp và góp ý đều được hoan nghênh!
-
----
-
-## 📄 License
-
-MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
-
----
 
 ## 📞 Liên Hệ
 
