@@ -194,4 +194,4 @@ MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 ## 📞 Liên Hế
 
 - **GitHub:** [HoangThaNHty](https://github.com/HoangThaNHty)
-- **Email:** hoangthanhty2904@gmail.com
+- **Email:** nguyenhoangthanhty.2503@gmail.com
