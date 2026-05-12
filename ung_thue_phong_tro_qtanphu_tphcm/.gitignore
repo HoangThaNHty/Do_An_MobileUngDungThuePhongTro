@@ -51,7 +51,8 @@ app.*.map.json
 
 # Documentation & Notes (không cần thiết cho production)
 *.txt
-*.md
+#除外根目录的README.md (Project documentation)
+/*.md
 !/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md
 
 # Stitch design folders
