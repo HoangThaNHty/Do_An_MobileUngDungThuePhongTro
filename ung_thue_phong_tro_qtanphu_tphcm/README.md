@@ -10,7 +10,7 @@
 
 ## 📋 Giới Thiệu
 
-Ứng dụng di động Flutter hỗ trợ cho thuê phòng trọ tại khu vực Quận Tân Phú, TP.HCM. Dự án hướng đến việc kết nối chủ trọ và người tìm thuê phòng một cách nhanh chóng và thuận tiện.
+Ứng dụng di động Flutter hỗ trợ cho thuê phòng trọ tại khu vực Quận Tân Phú, TP.HCM. Dự án hướng đến việc kết nối chủ trọ và người tìm thuê phòng một cách nhanh chóng và thuận tiện. Phiên bản này đã được nâng cấp toàn diện lên chuẩn thương mại cao cấp (Premium) với hệ thống bảo mật cách ly dữ liệu hai chiều, cổng thanh toán VietQR Napas động, bản đồ mini thông minh định tuyến nội bộ (In-App Direction) và kịch bản seeder tài khoản test tự động.
 
 ---
 
@@ -80,8 +80,9 @@ lib/
 │       ├── rental.dart            # Cờ showToLandlord, showToTenant cách ly xóa độc lập...
 │       └── bill.dart              # Cờ paymentSubmitted, các trường cộng dồn...
 │
-├── repositories/                  # Kết nối Firebase Realtime Database
-│   └── room_repository.dart       # Đăng phòng, đổi trạng thái, sửa phòng
+├── repositories/                  # Kết nối các dịch vụ ngoại vi
+│   ├── room_repository.dart       # Đăng phòng, đổi trạng thái, sửa phòng trên Firebase
+│   └── storage_repository.dart    # Đăng tải hình ảnh & video lên Cloudinary API
 │
 └── views/                         # Giao diện hiển thị
     ├── screens/
@@ -104,6 +105,7 @@ lib/
 | Language | Dart |
 | State Management | Riverpod (Hệ thống provider đồng bộ tối ưu) |
 | Backend | Firebase (Realtime Database, Authentication) |
+| Storage | Cloudinary API (Lưu trữ hình ảnh & video chuyên dụng) |
 | Maps | Google Maps Flutter (Polyline Drawing & Directions) |
 | UI | Material Design 3 (HSL Harmony Premium, Glassmorphism, Micro-animations) |
 
@@ -114,7 +116,7 @@ lib/
 Hãy thực hiện các bước sau để thiết lập dự án chuẩn và chạy thử nghiệm mượt mà 100%:
 
 ```bash
-# 1. Clone repository về máy
+# 1. Clone repository về máy (Sử dụng branch mới đã nâng cấp bảo mật & Premium)
 git clone -b feature/premium-upgrades-and-privacy https://github.com/HoangThaNHty/Do_An_MobileUngDungThuePhongTro.git
 
 # 2. Di chuyển vào thư mục ứng dụng chính
@@ -159,6 +161,18 @@ Tạo file `.env` tại thư mục gốc của dự án `ung_thue_phong_tro_qtan
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 FIREBASE_API_KEY=your_firebase_api_key_here
 ```
+
+### 3. Cấu hình Lưu trữ Hình ảnh & Video (Cloudinary Storage - Thay thế Firebase Storage)
+Để tối ưu hóa tốc độ tải ảnh, xử lý video giới thiệu và tránh các giới hạn băng thông/chi phí của Firebase Storage, ứng dụng đã được tích hợp **Cloudinary** làm giải pháp lưu trữ hình ảnh & video chuyên dụng:
+* **Cấu hình sẵn có**: Dự án đã được thiết lập sẵn Cloud Name (`dl0ltsay7`) và Unsigned Upload Preset (`ml_default`) hoạt động ngay lập tức không cần cấu hình thêm.
+* **Tự cấu hình lại (Nếu muốn dùng tài khoản Cloudinary riêng)**:
+  1. Đăng ký tài khoản miễn phí tại [Cloudinary](https://cloudinary.com).
+  2. Tạo một **Unsigned Upload Preset** (ví dụ: `ml_default`) trong mục *Settings -> Upload -> Upload presets*.
+  3. Mở tệp `lib/repositories/storage_repository.dart` và cập nhật các thông số:
+     ```dart
+     static const String _cloudName = 'your_cloud_name_cua_ban';
+     static const String _uploadPreset = 'your_upload_preset_cua_ban';
+     ```
 
 ---
 
