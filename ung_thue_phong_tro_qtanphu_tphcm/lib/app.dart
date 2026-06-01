@@ -22,7 +22,7 @@ class PhongTroApp extends ConsumerWidget {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(
-              MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
+              MediaQuery.textScalerOf(context).scale(1).clamp(0.8, 1.2),
             ),
           ),
           child: child!,

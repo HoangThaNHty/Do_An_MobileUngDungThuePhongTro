@@ -91,6 +91,246 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
+  void _showForgotPasswordDialog() {
+    final emailCtrl = TextEditingController(text: _emailCtrl.text);
+    final formKey = GlobalKey<FormState>();
+    bool isDialogLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: !isDialogLoading,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.surfaceContainerLowest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.lock_reset_outlined, color: AppColors.primary, size: 28),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Khôi phục mật khẩu',
+                    style: AppTypography.titleMD.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vui lòng nhập Email tài khoản của bạn. Hệ thống sẽ gửi liên kết bảo mật để đặt lại mật khẩu.',
+                      style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: !isDialogLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Email tài khoản',
+                        hintText: 'example@gmail.com',
+                        prefixIcon: const Icon(Icons.mail_outline),
+                        filled: true,
+                        fillColor: AppColors.surfaceContainerLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.input),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Vui lòng nhập Email';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v.trim())) {
+                          return 'Định dạng email không hợp lệ';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actions: [
+                TextButton(
+                  onPressed: isDialogLoading ? null : () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Hủy bỏ',
+                    style: TextStyle(color: Colors.red[600], fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: isDialogLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isDialogLoading = true);
+                            final email = emailCtrl.text.trim();
+                            try {
+                              await ref
+                                  .read(authControllerProvider.notifier)
+                                  .sendPasswordResetEmail(email);
+
+                              if (context.mounted) {
+                                Navigator.of(context).pop(); // Close dialog
+                                
+                                if (email.endsWith('@email.com')) {
+                                  // Show developer mode dialog
+                                  _showDeveloperResetSuccessDialog(email);
+                                } else {
+                                  // Show real email success dialog
+                                  _showRealResetSuccessDialog(email);
+                                }
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                setDialogState(() => isDialogLoading = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+                                    backgroundColor: Colors.red[700],
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                  ),
+                  child: isDialogLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Gửi yêu cầu'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeveloperResetSuccessDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.terminal_outlined, color: Colors.amber, size: 28),
+              SizedBox(width: 10),
+              Text(
+                'Chế độ Tester',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Phát hiện đây là tài khoản kiểm thử hệ thống ($email).',
+                style: AppTypography.bodyMD,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.amber),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Mật khẩu của tài khoản ảo đã được khôi phục về mặc định: 123456.',
+                        style: AppTypography.bodySM.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Bạn có thể đăng nhập ngay lập tức mà không cần kiểm tra hòm thư ảo!',
+                style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Đồng ý'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRealResetSuccessDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.mark_email_read_outlined, color: Colors.green, size: 28),
+              SizedBox(width: 10),
+              Text(
+                'Đã gửi liên kết!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            'Hệ thống đã gửi liên kết khôi phục bảo mật thành công tới hòm thư $email. Vui lòng mở Hộp thư đến (Inbox) hoặc Thư rác (Spam) để thay đổi mật khẩu của bạn.',
+            style: AppTypography.bodyMD,
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Đóng'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Listen to error states
@@ -113,11 +353,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final authState = ref.watch(authControllerProvider);
 
+    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
+      backgroundColor: AppColors.surfaceContainerLowest,
       body: Stack(
         children: [
-          // Background Image
-          Positioned.fill(
+          // Background Image (Top 55%)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: screenHeight * 0.55,
             child: Stack(
               children: [
                 Image.network(
@@ -128,7 +374,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 // Blue overlay
                 Container(
-                  color: AppColors.primaryContainer.withOpacity(0.2),
+                  color: AppColors.primaryContainer.withValues(alpha: 0.2),
                 ),
                 // Gradient overlay
                 Container(
@@ -137,8 +383,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppColors.primaryContainer.withOpacity(0.6),
-                        Colors.black.withOpacity(0.4),
+                        AppColors.primaryContainer.withValues(alpha: 0.6),
+                        Colors.black.withValues(alpha: 0.4),
                       ],
                     ),
                   ),
@@ -148,78 +394,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
 
           SafeArea(
-            child: Column(
-              children: [
-                // Top Area (Logo)
-                Expanded(
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: const Icon(
-                        Icons.location_city,
-                        color: Colors.white,
-                        size: 60,
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Top Area (Logo) - No Expanded, using Padding instead
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        ),
+                        child: const Icon(
+                          Icons.location_city,
+                          color: Colors.white,
+                          size: 60,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // Bottom Login Card
-                Container(
-                  width: double.infinity,
-                  height: 618,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 32,
-                        offset: Offset(0, -8),
-                      )
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      // Handle Bar
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(2),
+                  // Bottom Login Card - No hardcoded height, wraps naturally!
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 32,
+                          offset: Offset(0, -8),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: AppSpacing.md),
+                        // Handle Bar
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: AppSpacing.lg),
 
-                      // Header Text
-                      Text(
-                        'Hệ thống Quản lý và Thuê phòng trọ',
-                        style: AppTypography.titleMD.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                        // Header Text
+                        Text(
+                          'Hệ thống Quản lý và Thuê phòng trọ',
+                          style: AppTypography.titleMD.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Tại Quận Tân Phú và TP.HCM',
-                        style: AppTypography.bodyMD.copyWith(
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tại Quận Tân Phú và TP.HCM',
+                          style: AppTypography.bodyMD.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
+                        const SizedBox(height: AppSpacing.xl),
 
-                      // Form Content
-                      Expanded(
-                        child: SingleChildScrollView(
+                        // Form Content
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                           child: Form(
                             key: _formKey,
@@ -265,7 +513,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       ),
                                     ),
                                     GestureDetector(
-                                      onTap: () {},
+                                      onTap: _showForgotPasswordDialog,
                                       child: Text(
                                         'Quên mật khẩu?',
                                         style: AppTypography.bodyMD.copyWith(
@@ -312,7 +560,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       backgroundColor: AppColors.primary,
                                       foregroundColor: AppColors.onPrimary,
                                       elevation: 8,
-                                      shadowColor: AppColors.primary.withOpacity(0.4),
+                                      shadowColor: AppColors.primary.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(AppRadius.button),
                                       ),
@@ -403,16 +651,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: AppSpacing.lg),
+                                const SizedBox(height: AppSpacing.xl),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -442,7 +690,7 @@ class _SocialButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(AppRadius.button),
-          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

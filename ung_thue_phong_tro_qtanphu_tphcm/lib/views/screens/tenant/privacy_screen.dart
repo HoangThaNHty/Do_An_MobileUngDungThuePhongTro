@@ -61,7 +61,7 @@ class PrivacyScreen extends StatelessWidget {
                 'Hotline: 1800-xxxx (miễn phí, 8:00-18:00 các ngày làm việc)\nEmail: support@phongtrotanphu.vn\nPhản hồi trong vòng 24 giờ làm việc.',
           ),
           const SizedBox(height: AppSpacing.md),
-          Center(
+          const Center(
             child: Text(
               'Cập nhật lần cuối: 01/01/2024\nPhiên bản 1.0.0',
               style: AppTypography.bodySM,
@@ -95,7 +95,7 @@ class PrivacyScreen extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.button),
                 ),
                 child: Icon(icon, size: 20, color: AppColors.primary),

@@ -79,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: AppColors.onPrimary.withOpacity(0.15),
+                        color: AppColors.onPrimary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Icon(
@@ -103,7 +103,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     Text(
                       'Tân Phú – TP.HCM',
                       style: AppTypography.bodyMD.copyWith(
-                        color: AppColors.onPrimary.withOpacity(0.8),
+                        color: AppColors.onPrimary.withValues(alpha: 0.8),
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
@@ -116,7 +116,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.onPrimary.withOpacity(0.7),
+                          AppColors.onPrimary.withValues(alpha: 0.7),
                         ),
                       ),
                     ),

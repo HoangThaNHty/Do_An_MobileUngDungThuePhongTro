@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/constants.dart';
+import '../../../controllers/auth_controller.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../models/entities/room.dart';
 import '../../widgets/cards/room_card.dart';
@@ -19,17 +20,28 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
   @override
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
+    final user = ref.watch(currentUserProvider);
+    
+    // Lọc danh sách phòng của riêng chủ trọ hiện tại
+    final landlordRooms = roomState.rooms.where((r) => r.landlordId == user?.id).toList();
     
     // Lọc danh sách phòng theo trạng thái
     final filteredRooms = _selectedFilter == null 
-        ? roomState.rooms 
-        : roomState.rooms.where((r) => r.status == _selectedFilter).toList();
+        ? landlordRooms 
+        : landlordRooms.where((r) => r.status == _selectedFilter).toList();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Quản lý Phòng trọ'),
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+            onPressed: () => context.push('/landlord/map'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: Column(
         children: [
@@ -41,10 +53,10 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip(null, 'Tất cả (${roomState.rooms.length})'),
-                  _buildFilterChip(RoomStatus.available, 'Còn trống (${roomState.rooms.where((r) => r.status == RoomStatus.available).length})'),
-                  _buildFilterChip(RoomStatus.rented, 'Đã thuê (${roomState.rooms.where((r) => r.status == RoomStatus.rented).length})'),
-                  _buildFilterChip(RoomStatus.overdue, 'Quá hạn (${roomState.rooms.where((r) => r.status == RoomStatus.overdue).length})'),
+                  _buildFilterChip(null, 'Tất cả (${landlordRooms.length})'),
+                  _buildFilterChip(RoomStatus.available, 'Còn trống (${landlordRooms.where((r) => r.status == RoomStatus.available).length})'),
+                  _buildFilterChip(RoomStatus.rented, 'Đã thuê (${landlordRooms.where((r) => r.status == RoomStatus.rented).length})'),
+                  _buildFilterChip(RoomStatus.overdue, 'Quá hạn (${landlordRooms.where((r) => r.status == RoomStatus.overdue).length})'),
                 ],
               ),
             ),
@@ -53,12 +65,12 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
           // Room list
           Expanded(
             child: filteredRooms.isEmpty
-                ? Center(
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.meeting_room_outlined, size: 64, color: AppColors.outlineVariant),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text('Không có phòng nào phù hợp', style: AppTypography.bodyMD),
                       ],
                     ),
@@ -72,12 +84,7 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: RoomCard(
                           room: room,
-                          onTap: () {
-                            // Tương lai: Chuyển đến màn hình chi tiết phòng của chủ trọ
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Đang phát triển tính năng xem chi tiết: ${room.title}')),
-                            );
-                          },
+                          onTap: () => context.push('/landlord/rooms/detail/${room.id}'),
                         ),
                       );
                     },

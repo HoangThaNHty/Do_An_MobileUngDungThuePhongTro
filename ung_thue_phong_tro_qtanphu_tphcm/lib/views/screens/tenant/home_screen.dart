@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/providers/room_provider.dart';
+import '../../../controllers/providers/create_room_provider.dart';
 import '../../widgets/cards/room_card.dart';
 import '../../../models/entities/room.dart';
+import '../../../controllers/chat_controller.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -30,13 +33,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final filteredRooms = ref.watch(filteredRoomsProvider);
     final districts = ref.watch(districtsProvider);
     final user = ref.watch(currentUserProvider);
+    final unreadCount = ref.watch(unreadChatsCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () =>
-              ref.read(roomProvider.notifier).loadRooms(),
+          onRefresh: () async {
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
           color: AppColors.primary,
           child: CustomScrollView(
             slivers: [
@@ -52,7 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Xin chào,',
                               style: AppTypography.bodyMD,
                             ),
@@ -64,16 +69,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
+                      // Hộp thư tin nhắn
+                      Badge(
+                        label: Text('$unreadCount'),
+                        isLabelVisible: unreadCount > 0,
+                        backgroundColor: AppColors.error,
+                        child: IconButton(
+                          icon: const Icon(Icons.chat_bubble_outline),
+                          color: AppColors.onSurfaceVariant,
+                          onPressed: () => context.push('/chat-list'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
                       // Avatar
                       GestureDetector(
                         onTap: () => _showProfileSheet(context),
                         child: CircleAvatar(
                           radius: 22,
-                          backgroundColor: AppColors.primary.withOpacity(0.12),
-                          backgroundImage: user?.avatarUrl != null
-                              ? NetworkImage(user!.avatarUrl!)
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                          backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                              ? NetworkImage(user.avatarUrl!)
                               : null,
-                          child: user?.avatarUrl == null
+                          child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
                               ? Text(
                                   user?.fullName.isNotEmpty == true
                                       ? user!.fullName[0].toUpperCase()
@@ -116,7 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: AppTypography.bodyMD.copyWith(
                               color: AppColors.onSurface,
                             ),
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               hintText: AppStrings.search,
                               hintStyle: AppTypography.bodyMD,
                               border: InputBorder.none,
@@ -229,7 +246,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Phòng trống',
                                 style: AppTypography.bodySM,
                               ),
@@ -247,7 +264,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           width: 1,
                           height: 36,
                           color:
-                              AppColors.outlineVariant.withOpacity(0.5),
+                              AppColors.outlineVariant.withValues(alpha: 0.5),
                         ),
                         Expanded(
                           child: Padding(
@@ -257,7 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Tổng phòng',
                                   style: AppTypography.bodySM,
                                 ),
@@ -289,7 +306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         AppStrings.roomList,
                         style: AppTypography.titleMD,
                       ),
@@ -304,28 +321,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // ─── Room List ────────────────────────
               if (roomState.isLoading)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.xxl),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Shimmer.fromColors(
+                          baseColor: AppColors.surfaceContainerLow,
+                          highlightColor: AppColors.surfaceContainerLowest,
+                          child: Container(
+                            height: 112,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                            ),
+                          ),
+                        ),
                       ),
+                      childCount: 3,
                     ),
                   ),
                 )
               else if (filteredRooms.isEmpty)
-                SliverToBoxAdapter(
+                const SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    padding: EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.search_off_outlined,
                           size: 64,
                           color: AppColors.outlineVariant,
                         ),
-                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(height: AppSpacing.md),
                         Text(
                           'Không tìm thấy phòng phù hợp',
                           style: AppTypography.bodyMD,
@@ -374,15 +403,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             CircleAvatar(
               radius: 36,
-              backgroundColor: AppColors.primary.withOpacity(0.12),
-              child: Text(
-                user?.fullName.isNotEmpty == true
-                    ? user!.fullName[0].toUpperCase()
-                    : 'U',
-                style: AppTypography.headlineMD.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                  ? NetworkImage(user.avatarUrl!)
+                  : null,
+              child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
+                  ? Text(
+                      user?.fullName.isNotEmpty == true
+                          ? user!.fullName[0].toUpperCase()
+                          : 'U',
+                      style: AppTypography.headlineMD.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -399,7 +433,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               title: const Text('Chính sách'),
               onTap: () {
                 Navigator.pop(context);
-                context.go('/tenant/privacy');
+                context.push('/tenant/privacy');
               },
             ),
             ListTile(
@@ -413,6 +447,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               onTap: () {
                 Navigator.pop(context);
+                ref.read(createRoomProvider.notifier).reset();
                 ref.read(authControllerProvider.notifier).logout();
               },
             ),

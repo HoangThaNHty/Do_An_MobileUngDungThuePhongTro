@@ -12,6 +12,7 @@ class Room {
   final int price;          // VND/month
   final RoomStatus status;
   final List<String> images;
+  final String? videoUrl;   // Link video giới thiệu phòng trọ (Cloudinary)
   final List<String> amenities;
   final String description;
   final String landlordId;
@@ -29,6 +30,7 @@ class Room {
     required this.price,
     required this.status,
     required this.images,
+    this.videoUrl,
     required this.amenities,
     required this.description,
     required this.landlordId,
@@ -47,6 +49,7 @@ class Room {
     int? price,
     RoomStatus? status,
     List<String>? images,
+    String? videoUrl,
     List<String>? amenities,
     String? description,
     String? landlordId,
@@ -64,6 +67,7 @@ class Room {
       price: price ?? this.price,
       status: status ?? this.status,
       images: images ?? this.images,
+      videoUrl: videoUrl ?? this.videoUrl,
       amenities: amenities ?? this.amenities,
       description: description ?? this.description,
       landlordId: landlordId ?? this.landlordId,
@@ -71,6 +75,53 @@ class Room {
       longitude: longitude ?? this.longitude,
       viewCount: viewCount ?? this.viewCount,
       createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'address': address,
+      'district': district,
+      'area': area,
+      'price': price,
+      'status': status.name,
+      'images': images,
+      'videoUrl': videoUrl,
+      'amenities': amenities,
+      'description': description,
+      'landlordId': landlordId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'viewCount': viewCount,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  factory Room.fromMap(Map<String, dynamic> map, String documentId) {
+    return Room(
+      id: documentId,
+      title: map['title'] ?? '',
+      address: map['address'] ?? '',
+      district: map['district'] ?? '',
+      area: (map['area'] ?? 0).toDouble(),
+      price: map['price'] ?? 0,
+      status: RoomStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => RoomStatus.available,
+      ),
+      images: List<String>.from(map['images'] ?? []),
+      videoUrl: map['videoUrl'],
+      amenities: List<String>.from(map['amenities'] ?? []),
+      description: map['description'] ?? '',
+      landlordId: map['landlordId'] ?? '',
+      latitude: map['latitude'] != null ? (map['latitude'] as num).toDouble() : null,
+      longitude: map['longitude'] != null ? (map['longitude'] as num).toDouble() : null,
+      viewCount: map['viewCount'] ?? 0,
+      createdAt: map['createdAt'] != null 
+          ? DateTime.tryParse(map['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 }

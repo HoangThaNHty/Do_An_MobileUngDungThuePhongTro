@@ -107,7 +107,7 @@ class RoomCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.sm),
                     // Price
                     Text(
-                      '${_formatCurrency(room.price)}đ/tháng',
+                      '${room.price.toVnd()}đ/tháng',
                       style: AppTypography.titleSM.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
@@ -133,13 +133,6 @@ class RoomCard extends StatelessWidget {
         color: AppColors.onSurfaceVariant,
         size: 32,
       ),
-    );
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
     );
   }
 }
@@ -214,7 +207,7 @@ class LandlordRoomCard extends StatelessWidget {
             ),
             // Content
             Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.sm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -226,7 +219,7 @@ class LandlordRoomCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '${_formatCurrency(room.price)}đ/tháng',
+                    '${room.price.toVnd()}đ/tháng',
                     style: AppTypography.bodyMD.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
@@ -244,7 +237,7 @@ class LandlordRoomCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${room.viewCount} lượt xem',
-                        style: AppTypography.bodySM,
+                        style: AppTypography.bodySM.copyWith(fontSize: 11),
                       ),
                       const Spacer(),
                       // Status toggle
@@ -264,13 +257,6 @@ class LandlordRoomCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
     );
   }
 }

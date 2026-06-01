@@ -6,9 +6,13 @@ import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../controllers/providers/bill_provider.dart';
+import '../../../controllers/providers/create_room_provider.dart';
 import '../../widgets/cards/room_card.dart';
 import '../../widgets/cards/stat_card.dart';
 import '../../../models/entities/room.dart';
+import '../../../models/entities/rental.dart';
+import '../../../repositories/room_repository.dart';
+import '../../../controllers/chat_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,7 +23,16 @@ class DashboardScreen extends ConsumerWidget {
     final roomState = ref.watch(roomProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
 
-    final rooms = roomState.rooms;
+    // Lắng nghe cọc giữ phòng realtime để hiển thị Banner thông báo
+    final rentalsAsync = ref.watch(allRentalsProvider);
+    final pendingRentals = rentalsAsync.maybeWhen(
+      data: (list) => list.where((r) => r.landlordId == user?.id && r.status == RentalStatus.pending).toList(),
+      orElse: () => <Rental>[],
+    );
+    final unreadCount = ref.watch(unreadChatsCountProvider);
+
+    // Lọc danh sách phòng của riêng chủ trọ hiện tại
+    final rooms = roomState.rooms.where((r) => r.landlordId == user?.id).toList();
     final rentedCount =
         rooms.where((r) => r.status == RoomStatus.rented).length;
     final availableCount =
@@ -31,7 +44,10 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => ref.read(roomProvider.notifier).loadRooms(),
+          onRefresh: () async {
+            // Firebase Stream automatically updates
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
           color: AppColors.primary,
           child: CustomScrollView(
             slivers: [
@@ -43,62 +59,146 @@ class DashboardScreen extends ConsumerWidget {
                       AppSpacing.md, 0),
                   child: Row(
                     children: [
-                      // Avatar
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor:
-                            AppColors.primary.withOpacity(0.12),
-                        backgroundImage: user?.avatarUrl != null
-                            ? NetworkImage(user!.avatarUrl!)
-                            : null,
-                        child: user?.avatarUrl == null
-                            ? Text(
-                                user?.fullName.isNotEmpty == true
-                                    ? user!.fullName[0].toUpperCase()
-                                    : 'C',
-                                style: AppTypography.titleSM.copyWith(
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
+                      // Bọc Avatar và Chào hỏi để điều hướng tới Hồ sơ cá nhân
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Xin chào chủ trọ,',
-                              style: AppTypography.bodySM,
-                            ),
-                            Text(
-                              user?.fullName ?? 'Chủ trọ',
-                              style: AppTypography.titleSM,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        child: GestureDetector(
+                          onTap: () => context.push('/landlord/profile'),
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor:
+                                    AppColors.primary.withValues(alpha: 0.12),
+                                backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                                    ? NetworkImage(user.avatarUrl!)
+                                    : null,
+                                child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
+                                    ? Text(
+                                        user?.fullName.isNotEmpty == true
+                                            ? user!.fullName[0].toUpperCase()
+                                            : 'C',
+                                        style: AppTypography.titleSM.copyWith(
+                                          color: AppColors.primary,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Xin chào chủ trọ,',
+                                      style: AppTypography.bodySM,
+                                    ),
+                                    Text(
+                                      user?.fullName ?? 'Chủ trọ',
+                                      style: AppTypography.titleSM,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () {},
+                      Badge(
+                        label: Text('$unreadCount'),
+                        isLabelVisible: unreadCount > 0,
+                        backgroundColor: AppColors.error,
+                        child: IconButton(
+                          icon: const Icon(Icons.chat_bubble_outline),
+                          color: AppColors.onSurfaceVariant,
+                          onPressed: () => context.push('/chat-list'),
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.logout),
                         color: AppColors.onSurfaceVariant,
-                        onPressed: () =>
-                            ref.read(authControllerProvider.notifier).logout(),
+                        onPressed: () {
+                          ref.read(createRoomProvider.notifier).reset();
+                          ref.read(authControllerProvider.notifier).logout();
+                        },
                       ),
                     ],
                   ),
                 ),
               ),
 
+              // Banner thông báo cọc giữ chỗ realtime cho chủ trọ
+              if (pendingRentals.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: const Color(0xFF81C784)),
+                        boxShadow: const [AppShadows.card],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified_user, color: Color(0xFF2E7D32), size: 28),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Có cọc giữ chỗ mới! 🔔',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1B5E20),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Khách ${pendingRentals.first.tenantName} đã cọc thành công 500k giữ phòng "${pendingRentals.first.roomTitle}".',
+                                  style: const TextStyle(
+                                    color: Color(0xFF2E7D32),
+                                    fontSize: 11,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          ElevatedButton(
+                            onPressed: () => context.go('/landlord/tenants'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2E7D32),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              minimumSize: Size.zero,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.button),
+                              ),
+                            ),
+                            child: const Text('Xem', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
               // ─── Title ─────────────────────────────
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                       AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
                   child: Text(
                     'Phòng của tôi',
@@ -176,7 +276,7 @@ class DashboardScreen extends ConsumerWidget {
                                   'Doanh thu tháng này',
                                   style: AppTypography.bodyMD.copyWith(
                                     color: AppColors.onPrimary
-                                        .withOpacity(0.8),
+                                        .withValues(alpha: 0.8),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -220,7 +320,7 @@ class DashboardScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tỷ lệ lấp đầy', style: AppTypography.titleSM),
+                        const Text('Tỷ lệ lấp đầy', style: AppTypography.titleSM),
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
@@ -314,7 +414,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Danh sách phòng',
+                      const Text('Danh sách phòng',
                           style: AppTypography.titleMD),
                       TextButton(
                         onPressed: () {},
@@ -347,15 +447,60 @@ class DashboardScreen extends ConsumerWidget {
                           crossAxisCount: 2,
                           mainAxisSpacing: AppSpacing.md,
                           crossAxisSpacing: AppSpacing.md,
-                          childAspectRatio: 0.78,
+                          childAspectRatio: 0.62,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final room = rooms[index];
                             return LandlordRoomCard(
                               room: room,
-                              onTap: () {},
-                              onStatusToggle: () {},
+                              onTap: () => context.push('/landlord/rooms/detail/${room.id}'),
+                              onStatusToggle: () async {
+                                final rentals = rentalsAsync.maybeWhen(
+                                  data: (list) => list,
+                                  orElse: () => <Rental>[],
+                                );
+                                final hasActiveContract = rentals.any((r) => r.roomId == room.id && r.status == RentalStatus.active);
+                                
+                                if (room.status == RoomStatus.rented && hasActiveContract) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Không thể chuyển sang "Còn trống" vì phòng đang có hợp đồng thuê hoạt động!'),
+                                        backgroundColor: AppColors.error,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+
+                                final newStatus = room.status == RoomStatus.available
+                                    ? RoomStatus.rented
+                                    : RoomStatus.available;
+                                try {
+                                  await ref.read(roomRepositoryProvider).updateRoomStatus(room.id, newStatus);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Đã cập nhật trạng thái phòng thành ${newStatus == RoomStatus.available ? "Còn trống" : "Đã thuê"}'),
+                                        backgroundColor: const Color(0xFF2E7D32),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Lỗi cập nhật trạng thái: $e'),
+                                        backgroundColor: AppColors.error,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                             );
                           },
                           childCount: rooms.length,

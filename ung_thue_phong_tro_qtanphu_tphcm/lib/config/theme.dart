@@ -157,7 +157,7 @@ class AppTheme {
         ),
         hintStyle: GoogleFonts.roboto(
           fontSize: 14,
-          color: AppColors.onSurfaceVariant.withOpacity(0.7),
+          color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
         ),
       ),
 
@@ -226,7 +226,7 @@ class AppTheme {
       // Bottom Nav
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surfaceContainerLowest,
-        indicatorColor: AppColors.primary.withOpacity(0.12),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.roboto(
@@ -316,11 +316,11 @@ class AppTheme {
     return lightTheme.copyWith(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF1A1C1C),
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryContainer,
         onPrimary: AppColors.onSurface,
-        surface: const Color(0xFF1A1C1C),
-        onSurface: const Color(0xFFE2E2E2),
+        surface: Color(0xFF1A1C1C),
+        onSurface: Color(0xFFE2E2E2),
       ),
     );
   }

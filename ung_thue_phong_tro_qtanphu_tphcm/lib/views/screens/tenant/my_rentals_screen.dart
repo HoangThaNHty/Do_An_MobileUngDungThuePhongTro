@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../config/constants.dart';
-import '../../../controllers/auth_controller.dart';
+import '../../../controllers/booking_controller.dart';
+import '../../../controllers/review_controller.dart';
 import '../../../controllers/providers/bill_provider.dart';
-import '../../widgets/common/status_chips.dart';
+import '../../../models/entities/bill.dart';
 import '../../../models/entities/rental.dart';
 
 class MyRentalsScreen extends ConsumerWidget {
@@ -12,10 +14,7 @@ class MyRentalsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final rentalsAsync = ref.watch(
-      rentalsProvider(user?.id ?? ''),
-    );
+    final rentalsAsync = ref.watch(tenantRentalsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -24,9 +23,7 @@ class MyRentalsScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
       ),
       body: rentalsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+        loading: () => const _RentalShimmerList(),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (rentals) {
           if (rentals.isEmpty) {
@@ -69,7 +66,7 @@ class MyRentalsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          const Text(
             'Hãy tìm kiếm và liên hệ chủ trọ để thuê phòng',
             style: AppTypography.bodyMD,
             textAlign: TextAlign.center,
@@ -80,7 +77,7 @@ class MyRentalsScreen extends ConsumerWidget {
   }
 }
 
-class _RentalCard extends StatelessWidget {
+class _RentalCard extends ConsumerWidget {
   final Rental rental;
   final VoidCallback onViewBills;
 
@@ -90,12 +87,37 @@ class _RentalCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final statusColor = rental.status == RentalStatus.active
-        ? AppColors.available
-        : AppColors.overdue;
-    final statusText =
-        rental.status == RentalStatus.active ? 'ĐANG THUÊ' : 'ĐÃ HẾT HẠN';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookingCtrl = ref.read(bookingControllerProvider);
+    final billsAsync = ref.watch(billsProvider(rental.tenantId));
+
+    final hasUnpaidBill = billsAsync.maybeWhen(
+      data: (list) => list.any((b) => b.roomId == rental.roomId && b.status == BillStatus.unpaid),
+      orElse: () => false,
+    );
+    
+    // Logic tự động kiểm tra quá hạn (Timeout check): Ngày hẹn gặp + 48 giờ
+    final deadline = rental.startDate.add(const Duration(hours: 48));
+    final isOverdue = DateTime.now().isAfter(deadline);
+
+    if (rental.status == RentalStatus.pending && isOverdue) {
+      // Tự động giải ngân cho chủ trọ khi khách im lặng bùng hẹn quá 48h
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await bookingCtrl.releaseDeposit(rentalId: rental.id);
+        } catch (_) {}
+      });
+    }
+
+    String statusText = 'ĐANG THUÊ';
+    if (rental.status == RentalStatus.pending) {
+      statusText = 'CỌC GIỮ CHỖ';
+    } else if (rental.status == RentalStatus.cancelled) {
+      statusText = 'ĐÃ HỦY';
+    } else if (rental.status == RentalStatus.expired) {
+      statusText = 'HẾT HẠN';
+    }
+
     final daysLeft = rental.remainingDays;
 
     return Container(
@@ -106,71 +128,254 @@ class _RentalCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primaryContainer,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.card),
-              ),
-            ),
-            child: Row(
+          // Wrap Header and Info block in GestureDetector for room view navigation
+          GestureDetector(
+            onTap: () => context.push('/tenant/room/${rental.roomId}'),
+            child: Column(
               children: [
-                const Icon(Icons.home_work_outlined,
-                    color: AppColors.onPrimary, size: 20),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    rental.roomTitle,
-                    style: AppTypography.titleSM.copyWith(
-                      color: AppColors.onPrimary,
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: rental.status == RentalStatus.pending
+                          ? [const Color(0xFFEF6C00), const Color(0xFFFFB74D)]
+                          : rental.status == RentalStatus.cancelled
+                              ? [const Color(0xFFC62828), const Color(0xFFE57373)]
+                              : [AppColors.primary, AppColors.primaryContainer],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.card),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.home_work_outlined,
+                          color: AppColors.onPrimary, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              rental.roomTitle,
+                              style: AppTypography.titleSM.copyWith(
+                                color: AppColors.onPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Chạm để xem chi tiết phòng và chủ nhà ➔',
+                              style: AppTypography.labelSM.copyWith(
+                                color: AppColors.onPrimary.withValues(alpha: 0.8),
+                                fontSize: 9,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.onPrimary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: AppTypography.labelSM.copyWith(
+                            color: AppColors.onPrimary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                // Visual touch hint banner
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.onPrimary.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppRadius.chip),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: AppSpacing.md),
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.touch_app_outlined, size: 14, color: AppColors.primary),
+                      SizedBox(width: 6),
+                      Text(
+                        'Chạm vào thẻ này để xem lại phòng & vị trí bản đồ ➔',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    statusText,
-                    style: AppTypography.labelSM.copyWith(
-                      color: AppColors.onPrimary,
-                      fontSize: 10,
-                    ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _infoRow(Icons.location_on_outlined, rental.roomAddress),
+                      const SizedBox(height: AppSpacing.xs),
+                      _infoRow(
+                        Icons.calendar_today_outlined,
+                        'Ngày hẹn dọn vào: ${_fmtDate(rental.startDate)}',
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _infoRow(
+                        Icons.payments_outlined,
+                        rental.status == RentalStatus.pending
+                            ? 'Tiền cọc giữ chỗ: 500.000đ (Đang khóa Escrow)'
+                            : '${rental.monthlyRent.toVnd()}đ/tháng',
+                        valueColor: rental.status == RentalStatus.pending
+                            ? const Color(0xFFEF6C00)
+                            : AppColors.primary,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          // Content
+          
+          // Action Buttons and Alerts (Not inside GestureDetector to prevent conflicts!)
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _infoRow(Icons.location_on_outlined, rental.roomAddress),
-                const SizedBox(height: AppSpacing.xs),
-                _infoRow(
-                  Icons.calendar_today_outlined,
-                  'Từ ${_fmtDate(rental.startDate)} đến ${_fmtDate(rental.endDate)}',
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                _infoRow(
-                  Icons.payments_outlined,
-                  '${_formatCurrency(rental.monthlyRent)}đ/tháng',
-                  valueColor: AppColors.primary,
-                ),
-                if (rental.isActive) ...[
+                if (rental.status == RentalStatus.pending) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                      border: Border.all(color: const Color(0xFFFFD54F)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.shield_outlined, color: Color(0xFFF57F17), size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'Đang được Bảo lãnh bởi Platform',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF57F17),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Vui lòng dọn vào trước ${_fmtDate(deadline)}. Sau thời hạn này 48 tiếng, nếu bạn không xác nhận, tiền cọc sẽ được tự động giải ngân cho chủ trọ để đền bù.',
+                          style: const TextStyle(color: Colors.black87, fontSize: 10, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  
+                  // Hai nút hành động Escrow của khách thuê
+                  Row(
+                    children: [
+                      // Nút hủy cọc tự động
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _onCancelDeposit(context, ref),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFC62828),
+                            side: const BorderSide(color: Color(0xFFFFCDD2)),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.button),
+                            ),
+                          ),
+                          icon: const Icon(Icons.cancel_outlined, size: 16),
+                          label: const Text('Hủy cọc', style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      // Nút xác nhận giải ngân
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _onReleaseDeposit(context, ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.button),
+                            ),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 16),
+                          label: const Text('Xác nhận thuê', style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                if (rental.status == RentalStatus.active && hasUnpaidBill) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                      border: Border.all(color: const Color(0xFFEF5350)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 16),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text(
+                            'Bạn có hóa đơn chưa thanh toán cho phòng này!',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFC62828),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: onViewBills,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC62828),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Thanh toán ngay',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (rental.status == RentalStatus.active) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -178,7 +383,7 @@ class _RentalCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: daysLeft < 30
                           ? AppColors.overdue
-                          : AppColors.available.withOpacity(0.3),
+                          : AppColors.available.withValues(alpha: 0.3),
                       borderRadius:
                           BorderRadius.circular(AppRadius.button),
                     ),
@@ -202,6 +407,52 @@ class _RentalCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ],
+                if (rental.status == RentalStatus.cancelled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  OutlinedButton.icon(
+                    onPressed: () => _onDeleteCancelledTransaction(context, ref),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFC62828),
+                      side: const BorderSide(color: Color(0xFFFFCDD2)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.button),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete_forever_outlined, size: 18),
+                    label: const Text('Xóa giao dịch', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+                if (rental.status != RentalStatus.pending) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: () => _showReviewBottomSheet(context, ref),
+                    child: Container(
+                      width: double.infinity,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.button),
+                        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.star_outline_rounded,
+                              size: 18, color: Color(0xFFFF8F00)),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            'Đánh giá chủ trọ',
+                            style: AppTypography.button.copyWith(
+                              color: const Color(0xFFFF8F00),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -240,6 +491,328 @@ class _RentalCard extends StatelessWidget {
     );
   }
 
+  void _showReviewBottomSheet(BuildContext context, WidgetRef ref) {
+    double selectedRating = 5.0;
+    final commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle line
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    // Title
+                    Text(
+                      'Đánh giá Chủ trọ',
+                      style: AppTypography.titleMD.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Nhận xét của bạn về trải nghiệm tại "${rental.roomTitle}"',
+                      style: AppTypography.bodySM,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Star Selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1.0;
+                        final isSelected = starValue <= selectedRating;
+                        return GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              selectedRating = starValue;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              isSelected ? Icons.star : Icons.star_border,
+                              color: const Color(0xFFFFB300),
+                              size: 40,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Star label description
+                    Text(
+                      _getRatingDescription(selectedRating),
+                      style: AppTypography.labelSM.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Comment Input
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Hãy chia sẻ cảm nhận chân thực của bạn về thái độ phục vụ, tính chính xác và chất lượng phòng trọ...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.all(AppSpacing.md),
+                      ),
+                      style: AppTypography.bodyMD,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Submit Button
+                    ElevatedButton(
+                      onPressed: () async {
+                        final comment = commentController.text.trim();
+                        if (comment.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vui lòng nhập nhận xét của bạn!'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Close bottom sheet
+                        Navigator.pop(ctx);
+
+                        // Submit review
+                        try {
+                          final reviewType = rental.status == RentalStatus.active
+                              ? 'Verified Tenant Review'
+                              : 'Cancelled Booking Review';
+
+                          await ref.read(reviewControllerProvider).submitReview(
+                                landlordId: rental.landlordId,
+                                roomId: rental.roomId,
+                                roomTitle: rental.roomTitle,
+                                tenantId: rental.tenantId,
+                                tenantName: rental.tenantName,
+                                rating: selectedRating,
+                                comment: comment,
+                                type: reviewType,
+                              );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Gửi đánh giá bảo chứng thành công! Cảm ơn bạn. 🎉'),
+                                backgroundColor: Color(0xFF2E7D32),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi gửi đánh giá: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.button),
+                        ),
+                      ),
+                      child: const Text('Gửi đánh giá ngay', style: AppTypography.button),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _getRatingDescription(double rating) {
+    if (rating <= 1.0) return 'Rất không hài lòng 😞';
+    if (rating <= 2.0) return 'Không hài lòng 😐';
+    if (rating <= 3.0) return 'Bình thường 🙂';
+    if (rating <= 4.0) return 'Hài lòng 😊';
+    return 'Tuyệt vời, cực kỳ hài lòng! 😍';
+  }
+
+  Future<void> _onReleaseDeposit(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận thuê phòng?'),
+        content: const Text('Bạn xác nhận đã ký hợp đồng thành công và đồng ý giải ngân 500.000đ tiền cọc giữ chỗ cho chủ trọ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E7D32)),
+            child: const Text('Đồng ý giải ngân'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(bookingControllerProvider).releaseDeposit(rentalId: rental.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Giải ngân cọc và bắt đầu hợp đồng thành công! 🎉'),
+              backgroundColor: Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _onCancelDeposit(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hủy cọc giữ chỗ?'),
+        content: const Text('Bạn có chắc chắn muốn hủy đặt cọc giữ chỗ phòng trọ này? 500.000đ sẽ được tự động hoàn lại 100% về ví của bạn ngay lập tức!'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            child: const Text('Đồng ý hủy cọc'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(bookingControllerProvider).cancelDeposit(
+              rentalId: rental.id,
+              roomId: rental.roomId,
+            );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã hủy đặt cọc giữ chỗ và hoàn tiền thành công! 💸'),
+              backgroundColor: Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _onDeleteCancelledTransaction(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa lịch sử giao dịch?'),
+        content: const Text('Bạn có chắc chắn muốn xóa lịch sử giao dịch đặt cọc đã hủy này khỏi danh sách hiển thị của bạn?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            child: const Text('Xóa vĩnh viễn'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(bookingControllerProvider).hideOrDeleteRental(
+              rentalId: rental.id,
+              roomId: rental.roomId,
+              tenantId: rental.tenantId,
+              isLandlord: false,
+            );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã xóa lịch sử giao dịch thành công!'),
+              backgroundColor: Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
   Widget _infoRow(IconData icon, String text, {Color? valueColor}) {
     return Row(
       children: [
@@ -257,11 +830,30 @@ class _RentalCard extends StatelessWidget {
 
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+}
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
+class _RentalShimmerList extends StatelessWidget {
+  const _RentalShimmerList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: 3,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: AppColors.surfaceContainerLow,
+          highlightColor: AppColors.surfaceContainerLowest,
+          child: Container(
+            height: 220,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+            ),
+          ),
+        );
+      },
     );
   }
 }

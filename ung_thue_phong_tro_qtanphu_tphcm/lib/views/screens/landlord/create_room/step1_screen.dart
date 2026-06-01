@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../controllers/providers/create_room_provider.dart';
 import '../../../widgets/common/app_button.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'map_picker_screen.dart';
 
 class Step1Screen extends ConsumerStatefulWidget {
   const Step1Screen({super.key});
@@ -41,7 +43,7 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
     _areaCtrl = TextEditingController(
         text: state.area > 0 ? state.area.toStringAsFixed(0) : '');
     _descCtrl = TextEditingController(text: state.description);
-    _district = state.district;
+    _district = _districts.contains(state.district) ? state.district : _districts.first;
     _depositMonths = state.depositMonths;
   }
 
@@ -57,6 +59,18 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
 
   void _next() {
     if (!_formKey.currentState!.validate()) return;
+    
+    final state = ref.read(createRoomProvider);
+    if (!state.isLocationValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn vị trí trên bản đồ!'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     ref.read(createRoomProvider.notifier).updateBasicInfo(
           title: _titleCtrl.text.trim(),
           address: _addressCtrl.text.trim(),
@@ -69,15 +83,45 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
     context.go('/landlord/create-room/step2');
   }
 
+  Future<void> _pickLocation() async {
+    final state = ref.read(createRoomProvider);
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          initialLat: state.latitude,
+          initialLng: state.longitude,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      final LatLng location = result['location'] as LatLng;
+      final String address = result['address'] as String;
+      
+      ref.read(createRoomProvider.notifier).updateLocation(location.latitude, location.longitude);
+      
+      // Tự động điền địa chỉ chi tiết nhận được từ Bản đồ vào ô nhập liệu
+      setState(() {
+        _addressCtrl.text = address;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(createRoomProvider);
+    final hasLocation = state.isLocationValid;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Thêm phòng'),
+        title: Text(state.isEditing ? 'Chỉnh sửa phòng' : 'Thêm phòng'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/landlord'),
+          onPressed: () {
+            ref.read(createRoomProvider.notifier).reset();
+            context.go('/landlord');
+          },
         ),
       ),
       body: Column(
@@ -87,11 +131,13 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
           Expanded(
             child: Form(
               key: _formKey,
-              child: ListView(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                children: [
-                  _sectionTitle('Bước 1: Thông tin cơ bản'),
-                  const SizedBox(height: AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionTitle('Bước 1: Thông tin cơ bản'),
+                    const SizedBox(height: AppSpacing.md),
 
                   // Title
                   TextFormField(
@@ -189,7 +235,7 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
                   const SizedBox(height: AppSpacing.md),
 
                   // Deposit months
-                  Text('Số tháng đặt cọc', style: AppTypography.bodyMD),
+                  const Text('Số tháng đặt cọc', style: AppTypography.bodyMD),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: _depositOptions
@@ -229,6 +275,46 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
+                  // Map Picker
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.outlineVariant),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Vị trí bản đồ *', style: AppTypography.labelSM),
+                        const SizedBox(height: AppSpacing.sm),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                hasLocation 
+                                  ? 'Đã chọn tọa độ: ${state.latitude!.toStringAsFixed(4)}, ${state.longitude!.toStringAsFixed(4)}'
+                                  : 'Chưa chọn vị trí',
+                                style: AppTypography.bodyMD.copyWith(
+                                  color: hasLocation ? AppColors.primary : AppColors.error,
+                                  fontWeight: hasLocation ? FontWeight.w500 : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            AppButton(
+                              text: hasLocation ? 'Sửa' : 'Chọn trên Map',
+                              type: AppButtonType.secondary,
+                              icon: Icons.map_outlined,
+                              fullWidth: false,
+                              onPressed: _pickLocation,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
                   // Description
                   TextFormField(
                     controller: _descCtrl,
@@ -247,7 +333,8 @@ class _Step1ScreenState extends ConsumerState<Step1Screen> {
                     icon: Icons.arrow_forward,
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

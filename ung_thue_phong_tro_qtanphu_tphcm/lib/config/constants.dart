@@ -285,3 +285,16 @@ class AppStrings {
 
   AppStrings._();
 }
+
+// ═══════════════════════════════════════════
+// CURRENCY EXTENSION — VND Formatting
+// ═══════════════════════════════════════════
+extension CurrencyExtension on int {
+  String toVnd() {
+    return toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+  }
+}
+

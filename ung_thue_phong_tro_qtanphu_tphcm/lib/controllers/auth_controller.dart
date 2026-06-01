@@ -180,6 +180,7 @@ class AuthController extends StateNotifier<AuthState> {
           fullName: data['fullName'] ?? '',
           email: data['email'] ?? '',
           phone: data['phone'] ?? '',
+          avatarUrl: data['avatarUrl'] as String?,
           role: UserRole.values.firstWhere(
             (e) => e.name == data['role'],
             orElse: () => UserRole.tenant,
@@ -187,12 +188,67 @@ class AuthController extends StateNotifier<AuthState> {
           createdAt: data['createdAt'] != null
               ? DateTime.parse(data['createdAt'])
               : DateTime.now(),
+          gender: data['gender'] as String?,
+          birthYear: data['birthYear'] as int?,
+          hometown: data['hometown'] as String?,
+          occupation: data['occupation'] as String?,
+          bio: data['bio'] as String?,
+          averageRating: (data['averageRating'] as num?)?.toDouble(),
         );
       }
     } catch (e) {
       // In log hoặc xử lý khi không lấy được
     }
     return null;
+  }
+
+  Future<void> updateProfile({
+    required String fullName,
+    required String phone,
+    String? avatarUrl,
+    String? gender,
+    int? birthYear,
+    String? hometown,
+    String? occupation,
+    String? bio,
+  }) async {
+    if (state.user == null) return;
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final uid = state.user!.id;
+      final ref = _db.ref('users/$uid');
+      
+      final updates = <String, dynamic>{
+        'fullName': fullName,
+        'phone': phone,
+        'gender': gender,
+        'birthYear': birthYear,
+        'hometown': hometown,
+        'occupation': occupation,
+        'bio': bio,
+      };
+      if (avatarUrl != null) {
+        updates['avatarUrl'] = avatarUrl;
+      }
+      
+      await ref.update(updates);
+      
+      final updatedUser = state.user!.copyWith(
+        fullName: fullName,
+        phone: phone,
+        avatarUrl: avatarUrl ?? state.user!.avatarUrl,
+        gender: gender,
+        birthYear: birthYear,
+        hometown: hometown,
+        occupation: occupation,
+        bio: bio,
+      );
+      
+      state = state.copyWith(user: updatedUser, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Cập nhật hồ sơ thất bại: $e');
+      rethrow;
+    }
   }
 
   Future<void> register({
@@ -244,6 +300,34 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      if (email.endsWith('@email.com')) {
+        // Giả lập cho tài khoản Tester ảo
+        await Future.delayed(const Duration(seconds: 1));
+        state = state.copyWith(isLoading: false);
+        return; // Trả về thành công giả lập
+      }
+      
+      // Thực hiện gửi email reset thật cho tài khoản thật
+      await _auth.sendPasswordResetEmail(email: email);
+      state = state.copyWith(isLoading: false);
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Gửi email khôi phục thất bại';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'Không tìm thấy tài khoản với email này';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Địa chỉ email không hợp lệ';
+      }
+      state = state.copyWith(isLoading: false, error: errorMessage);
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Lỗi không xác định: $e');
+      rethrow;
+    }
+  }
+
   void logout() {
     _auth.signOut();
     _googleSignIn.signOut();
@@ -267,4 +351,33 @@ final currentUserProvider = Provider<AppUser?>((ref) {
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
   return ref.watch(authControllerProvider).isAuthenticated;
+});
+
+final userByIdProvider = FutureProvider.family<AppUser?, String>((ref, uid) async {
+  final db = FirebaseDatabase.instance;
+  final snapshot = await db.ref('users/$uid').get();
+  if (snapshot.exists) {
+    final data = snapshot.value as Map<dynamic, dynamic>;
+    return AppUser(
+      id: data['id'] ?? uid,
+      fullName: data['fullName'] ?? '',
+      email: data['email'] ?? '',
+      phone: data['phone'] ?? '',
+      avatarUrl: data['avatarUrl'] as String?,
+      role: UserRole.values.firstWhere(
+        (e) => e.name == data['role'],
+        orElse: () => UserRole.tenant,
+      ),
+      createdAt: data['createdAt'] != null
+          ? DateTime.parse(data['createdAt'])
+          : DateTime.now(),
+      gender: data['gender'] as String?,
+      birthYear: data['birthYear'] as int?,
+      hometown: data['hometown'] as String?,
+      occupation: data['occupation'] as String?,
+      bio: data['bio'] as String?,
+      averageRating: (data['averageRating'] as num?)?.toDouble(),
+    );
+  }
+  return null;
 });

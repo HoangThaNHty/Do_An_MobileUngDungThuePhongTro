@@ -10,7 +10,7 @@
 
 ## 📋 Giới Thiệu
 
-Ứng dụng di động Flutter hỗ trợ cho thuê phòng trọ tại khu vực Quận Tân Phú, TP.HCM. Dự án hướng đến việc kết nối chủ trọ và người tìm thuê phòng một cách nhanh chóng và thuận tiện.
+Ứng dụng di động Flutter hỗ trợ cho thuê phòng trọ tại khu vực Quận Tân Phú, TP.HCM. Dự án hướng đến việc kết nối chủ trọ và người tìm thuê phòng một cách nhanh chóng và thuận tiện. Phiên bản này đã được nâng cấp toàn diện lên chuẩn thương mại cao cấp (Premium) với hệ thống bảo mật cách ly dữ liệu hai chiều, cổng thanh toán VietQR Napas động, bản đồ mini thông minh định tuyến nội bộ (In-App Direction) và kịch bản seeder tài khoản test tự động.
 
 ---
 
@@ -24,34 +24,30 @@
 
 ---
 
-## 🚀 Tính Năng
+## 🚀 Tính Năng Nổi Bật (Premium Upgrades & QA Fixed)
 
-### 🔑 Authentication
-- Đăng nhập / Đăng ký tài khoản
-- Phân quyền theo role (tenant / landlord / admin)
-- Firebase Authentication (email/password)
+Ứng dụng đã được nâng cấp lên chuẩn sản phẩm thương mại cao cấp với các tính năng đột phá:
 
-### 🏠 Dành Cho Người Thuê (Tenant)
-- **Trang chủ:** Danh sách phòng trọ available
-- **Tìm kiếm nâng cao:** Lọc theo giá, diện tích, khu vực
-- **Chi tiết phòng:** Xem thông tin, hình ảnh, tiện ích
-- **Bản đồ:** Hiển thị vị trí phòng trên Google Maps
-- **Phòng đang thuê:** Xem danh sách phòng đã thuê
-- **Hóa đơn:** Xem lịch sử thanh toán
-- **Liên hệ:** Liên hệ chủ trọ
-- **Chính sách:** Xem quy định, điều khoản
+### 🔑 Authentication & Tester Hybrid Mode
+- **Chế độ Tester tiện lợi:** Khi quên mật khẩu, nhập bất kỳ email đuôi `@email.com` của hệ thống ảo (như `namle@email.com` hoặc `annguyen@email.com`), hệ thống tự động reset mật khẩu về `123456` trực quan trên màn hình để test tiếp mà không cần check hòm thư ảo. Nhập email thật sẽ gửi email khôi phục Gmail thực tế.
+- **Đồng bộ Avatar tức thì:** Đổi ảnh đại diện sẽ lưu đồng bộ ngay lập tức thời gian thực lên Firebase Realtime Database.
 
-### 🏢 Dành Cho Chủ Trọ (Landlord)
-- **Dashboard:** Tổng quan thống kê (số phòng, doanh thu, khách thuê)
-- **Quản lý phòng:** Thêm mới / chỉnh sửa / xóa phòng (3 bước)
-- **Quản lý khách thuê:** Xem danh sách khách đang thuê
-- **Tạo hóa đơn:** Tạo và gửi hóa đơn cho khách
+### 🏠 Tính năng Người Thuê (Tenant Premium)
+- **Đường đi In-App Polyline:** Bản đồ mini nâng cấp kéo thả mượt mà, vẽ tuyến đường nét đứt màu tím primary độc quyền chỉ từ GPS hiện tại của khách thuê đến trực tiếp phòng trọ.
+- **Nút Dẫn đường nổi:** Chuyển hướng nhanh sang ứng dụng Google Maps ngoại vi trên máy điện thoại để dẫn đường lái xe thời gian thực GPS.
+- **Cọc giữ chỗ & Ví trung gian:** Hiển thị banner bảo chứng xanh **"Ví trung gian Platform bảo lãnh"** tạo lòng tin tuyệt đối cho người thuê.
+- **Thanh toán VietQR Napas P2P:** Tự động tạo mã QR động ngân hàng MB Bank tích hợp sẵn số tiền, người nhận (số điện thoại chủ trọ), kèm lời nhắn không dấu tự động.
+- **Xác minh 2 chiều chống gian lận:** Khách báo chuyển tiền xong, hóa đơn chuyển sang trạng thái vàng **"ĐANG CHỜ DUYỆT ⏳"** và khóa nút thanh toán.
 
-### 🛠️ Dành Cho Admin *(Đang phát triển - branch: feature/admin-management)*
-- Dashboard thống kê tổng quan
-- Duyệt phòng trọ mới đăng
-- Quản lý người dùng
-- Xem tất cả hóa đơn
+### 🏢 Tính năng Chủ Trọ (Landlord Premium)
+- **Zero-Leakage (Cách ly dữ liệu 100%):** Áp dụng cơ chế bảo mật kép hai chiều (Double-Layer Security). Bích Trần đăng nhập sẽ chỉ nhìn thấy phòng và người thuê của riêng mình. Mọi thông tin hợp đồng, hóa đơn, chat của Nguyễn Văn An được mã hóa cách ly tuyệt đối, loại bỏ hoàn toàn việc hiển thị chéo.
+- **Lập hóa đơn thông minh (Smart Billing Engine):**
+  - **Chặn lập trùng hóa đơn:** Tự động quét và khóa nút Tạo, hiện banner cảnh báo đỏ nếu phòng đã được lập hóa đơn trong tháng này.
+  - **Thẻ hồ sơ đối chiếu:** Hiện Avatar, Tên, SĐT khách thuê ngay khi chọn phòng để đối chiếu tránh lập nhầm.
+  - **Gợi ý chỉ số cũ:** Tự động tra cứu và hiển thị lượng điện cũ, nước cũ tháng trước của phòng để tiện nhập liệu.
+  - **Thêm dịch vụ động vô hạn:** Cho phép bấm nút thêm dịch vụ tùy biến (ví dụ: phí gửi xe, giặt ủi, dọn dẹp) nhập tự do và tự động cộng dồn lên Firebase.
+- **Quản lý lịch sử hóa đơn:** Nút xem lịch sử hóa đơn trên từng thẻ người thuê. Cho phép hủy/xóa hóa đơn lỗi (chưa thanh toán) trực tiếp khỏi Firebase Realtime Database.
+- **Xóa độc lập giao dịch đã hủy:** Cả chủ trọ và khách thuê có quyền ẩn/xóa thẻ giao dịch bị hủy ở phía mình mà không ảnh hưởng tới người còn lại. Khi cả 2 cùng xóa, bản ghi sẽ tự động xóa sạch hoàn toàn khỏi cơ sở dữ liệu.
 
 ---
 
@@ -59,39 +55,43 @@
 
 ```
 lib/
-├── main.dart                      # Entry point
-├── app.dart                       # App configuration
+├── main.dart                      # Khởi tạo & Định dạng hướng Portrait màn hình
+├── app.dart                       # Route & Theme binding
 │
 ├── config/                        # Cấu hình
-│   ├── routes.dart               # Định nghĩa routes
-│   ├── theme.dart                # Theme & styling
-│   ├── constants.dart            # Hằng số
-│   └── google_maps_config.dart   # Google Maps API
+│   ├── routes.dart               # Định nghĩa các GoRouter URL & Kiểm tra phân quyền truy cập chéo (IDOR blocks)
+│   ├── theme.dart                # Bảng màu Harmony HSL, Premium Glassmorphism
+│   └── constants.dart            # Định nghĩa các hằng số Typography, Spacing, Radius
 │
-├── controllers/                   # Logic xử lý
-│   ├── auth_controller.dart       # Auth logic
-│   └── providers/                 # State management (Provider)
-│       ├── room_provider.dart
-│       ├── bill_provider.dart
+├── controllers/                   # Controllers quản lý logic nghiệp vụ
+│   ├── auth_controller.dart       # Đăng ký, Đăng nhập, Reset mật khẩu tester ảo & thật
+│   ├── booking_controller.dart    # Lập cọc, thanh toán cọc, giải ngân, hủy giao dịch ẩn độc lập
+│   ├── chat_controller.dart       # Quét phòng chat, gửi tin nhắn, đếm tin chưa đọc thời gian thực
+│   ├── review_controller.dart     # Tạo đánh giá, tính điểm trung bình cộng rating của chủ trọ
+│   └── providers/                 # State management (Riverpod Providers)
+│       ├── room_provider.dart     # Quản lý danh sách phòng & Lọc tìm kiếm cục bộ
+│       ├── bill_provider.dart     # Danh sách hóa đơn, cách ly doanh thu & Thống kê Dashboard
 │       └── create_room_provider.dart
 │
-├── models/                        # Data models
+├── models/                        # Định nghĩa thực thể dữ liệu (Data models)
 │   └── entities/
-│       ├── user.dart
-│       ├── room.dart
-│       ├── rental.dart
-│       └── bill.dart
+│       ├── user.dart              # Thông tin mở rộng: Quê quán, Năm sinh, Giới tính, Bio...
+│       ├── room.dart              # Tọa độ Map, URL Video giới thiệu, landlordId...
+│       ├── rental.dart            # Cờ showToLandlord, showToTenant cách ly xóa độc lập...
+│       └── bill.dart              # Cờ paymentSubmitted, các trường cộng dồn...
 │
-└── views/                         # Giao diện
+├── repositories/                  # Kết nối Firebase Realtime Database
+│   └── room_repository.dart       # Đăng phòng, đổi trạng thái, sửa phòng
+│
+└── views/                         # Giao diện hiển thị
     ├── screens/
-    │   ├── auth/                  # Login, Register
-    │   ├── shared/                # Splash
-    │   ├── tenant/                # Màn hình người thuê
-    │   ├── landlord/              # Màn hình chủ trọ
-    │   └── admin/                 # Màn hình admin (mới)
-    └── widgets/                   # Reusable components
-        ├── cards/
-        └── common/
+    │   ├── auth/                  # Màn hình đăng ký, đăng nhập chống tràn bàn phím ảo
+    │   ├── shared/                # Splash Screen, Chat Room bảo mật, Danh sách nhắn tin
+    │   ├── tenant/                # Màn hình Tenant (VietQR sheet, Mini-map Polyline...)
+    │   └── landlord/              # Màn hình Landlord (Quản lý người thuê, Lịch sử, Duyệt tiền...)
+    └── widgets/                   # Các thành phần tái sử dụng (Reusable widgets)
+        ├── cards/                 # RoomCard, StatCard...
+        └── common/                # AppButton, Shimmer loading, Scaffolds...
 ```
 
 ---
@@ -102,55 +102,70 @@ lib/
 |------------|-----------|
 | Framework | Flutter 3.x |
 | Language | Dart |
-| State Management | Provider |
-| Backend | Firebase (Firestore, Auth) |
-| Maps | Google Maps Flutter |
-| UI | Material Design 3 |
+| State Management | Riverpod (Hệ thống provider đồng bộ tối ưu) |
+| Backend | Firebase (Realtime Database, Authentication) |
+| Maps | Google Maps Flutter (Polyline Drawing & Directions) |
+| UI | Material Design 3 (HSL Harmony Premium, Glassmorphism, Micro-animations) |
 
 ---
 
-## 📋 Yêu Cầu Cài Đặt
+## 📋 Yêu Cầu Cài Đặt Cho Các Thành Viên Trong Nhóm
+
+Hãy thực hiện các bước sau để thiết lập dự án chuẩn và chạy thử nghiệm mượt mà 100%:
 
 ```bash
-# Clone repo
-git clone https://github.com/HoangThaNHty/Do_An_MobileUngDungThuePhongTro.git
+# 1. Clone repository về máy (Sử dụng branch mới đã nâng cấp bảo mật & Premium)
+git clone -b feature/premium-upgrades-and-privacy https://github.com/HoangThaNHty/Do_An_MobileUngDungThuePhongTro.git
 
-# Di chuyển vào thư mục
+# 2. Di chuyển vào thư mục ứng dụng chính
 cd ung_thue_phong_tro_qtanphu_tphcm
 
-# Cài đặt dependencies
+# 3. Cài đặt các gói thư viện dependencies
 flutter pub get
 
-# Chạy ứng dụng
+# 4. Chạy phân tích mã nguồn để kiểm tra sạch lỗi
+flutter analyze
+
+# 5. Chạy bộ kiểm thử tự động để đảm bảo luồng hoạt động ổn định
+flutter test
+
+# 6. Khởi chạy ứng dụng lên máy ảo hoặc thiết bị thật
 flutter run
 ```
 
 ---
 
-## ⚙️ Cấu Hình
+## ⚙️ Thiết Lập Firebase & Đồng Bộ Hóa Tester Accounts
 
-### Firebase
+Để toàn bộ thành viên trong nhóm có thể dùng chung tài khoản test và dữ liệu đồng bộ tức thì với cơ sở dữ liệu, tôi đã trang bị một kịch bản seeder tự động cực kỳ thông minh:
 
+### 1. Đồng bộ tài khoản test thông minh (Mật khẩu mặc định: `123456`)
+Trước khi chạy ứng dụng lần đầu, hãy mở **PowerShell** tại thư mục `ung_thue_phong_tro_qtanphu_tphcm` và chạy lệnh sau để tự động tạo tài khoản kiểm thử trên Authentication và đồng bộ dữ liệu chuẩn lên Realtime Database:
 
-### Google Maps API
-1. Lấy API Key tại [Google Cloud Console](https://console.cloud.google.com)
-2. Bật **Maps SDK for Android** và **Maps SDK for iOS**
-3. Cập nhật API Key trong:
-   - `android/app/src/main/AndroidManifest.xml`
-   - `lib/config/google_maps_config.dart`
-
-### Environment Variables
-Copy `.env.example` thành `.env` và điền thông tin:
-```
-GOOGLE_MAPS_API_KEY=your_api_key
-FIREBASE_API_KEY=your_firebase_key
+```powershell
+# Chạy script seeder tự động hóa đồng bộ tài khoản test
+./test/auto_auth_seeder.ps1
 ```
 
+* **Danh sách tài khoản test sau khi đồng bộ:**
+  1. **Chủ trọ Nguyễn Văn An:** `annguyen@email.com` / `123456` (Sở hữu 6 phòng trọ có sẵn, có lịch sử hóa đơn và người thuê).
+  2. **Chủ trọ Trần Thị Bích:** `bichtran@email.com` / `123456` (Sở hữu 4 phòng trọ trống).
+  3. **Khách thuê Lê Hoàng Nam:** `namle@email.com` / `123456`.
+  4. **Khách thuê Phạm Thị Lan:** `lanpham@email.com` / `123456`.
 
-## 📝 Các Branch Hiện Tại
+### 2. Thiết lập cấu hình API Keys (.env)
+Tạo file `.env` tại thư mục gốc của dự án `ung_thue_phong_tro_qtanphu_tphcm/` và điền cấu hình API của dự án:
+```env
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+FIREBASE_API_KEY=your_firebase_api_key_here
+```
 
-| Branch | Mô tả |
-|--------|-------|
-| `main` | Phiên bản chính (Tenant + Landlord) |
-| `feature/admin-management` | Phát triển tính năng Admin |
+---
 
+## 📝 Nhật Ký Các Chi Nhánh (Branches)
+
+| Chi nhánh | Mô tả | Trạng thái |
+|-----------|-------|------------|
+| `main` | Phiên bản gốc của nhóm | Ổn định |
+| `feature/premium-upgrades-and-privacy` | **Phiên bản mới nhất nâng cấp Premium, VietQR Payment & Cách ly chống rò rỉ dữ liệu** | **Hoàn thành - Sẵn sàng nghiệm thu** |
+| `feature/admin-management` | Tính năng Admin đang phát triển | Đang phát triển |

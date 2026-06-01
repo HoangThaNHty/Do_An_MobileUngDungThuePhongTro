@@ -81,7 +81,7 @@ class TenantScaffold extends StatelessWidget {
                   activeIcon: Icons.person,
                   label: AppStrings.profile,
                   isActive: currentIndex == 4,
-                  onTap: () => context.go('/tenant/privacy'),
+                  onTap: () => context.go('/tenant/profile'),
                 ),
               ],
             ),
@@ -96,7 +96,7 @@ class TenantScaffold extends StatelessWidget {
     if (location.startsWith('/tenant/search')) return 1;
     if (location.startsWith('/tenant/map')) return 2;
     if (location.startsWith('/tenant/rentals')) return 3;
-    if (location.startsWith('/tenant/privacy')) return 4;
+    if (location.startsWith('/tenant/profile')) return 4;
     return 0;
   }
 

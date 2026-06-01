@@ -24,9 +24,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     'Điều hòa', 'Nóng lạnh', 'Tủ lạnh',
     'WiFi', 'Máy giặt', 'Ban công', 'Bếp', 'Tivi',
   ];
-  static const List<String> _statusOptions = [
-    'Tất cả', 'CÒN TRỐNG', 'ĐÃ THUÊ',
-  ];
 
   @override
   void dispose() {
@@ -101,7 +98,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Khoảng giá
-            Text('Khoảng giá thuê', style: AppTypography.titleSM),
+            const Text('Khoảng giá thuê', style: AppTypography.titleSM),
             const SizedBox(height: AppSpacing.xs),
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -142,7 +139,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Quận
-            Text('Khu vực', style: AppTypography.titleSM),
+            const Text('Khu vực', style: AppTypography.titleSM),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.sm,
@@ -193,7 +190,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Tiện nghi
-            Text('Tiện nghi', style: AppTypography.titleSM),
+            const Text('Tiện nghi', style: AppTypography.titleSM),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.sm,
@@ -212,7 +209,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primary.withOpacity(0.12)
+                          ? AppColors.primary.withValues(alpha: 0.12)
                           : AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(AppRadius.chip),
                       border: Border.all(

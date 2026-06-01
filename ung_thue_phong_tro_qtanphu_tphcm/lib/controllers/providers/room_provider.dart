@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/datasources/mock_data.dart';
 import '../../models/entities/room.dart';
-
+import '../../models/entities/user.dart';
+import '../../repositories/room_repository.dart';
+import '../auth_controller.dart';
 // Room filter state
 class RoomFilter {
   final String? district;
@@ -67,6 +69,10 @@ class RoomState {
 
   List<Room> get filteredRooms {
     var list = rooms.where((room) {
+      // Mặc định chỉ hiển thị phòng còn trống trên danh sách tìm kiếm/khám phá công cộng
+      if (filter.status == null && room.status != RoomStatus.available) {
+        return false;
+      }
       // Search query
       if (searchQuery.isNotEmpty) {
         final q = searchQuery.toLowerCase();
@@ -91,6 +97,18 @@ class RoomState {
       if (filter.status != null && room.status != filter.status) {
         return false;
       }
+      // Area filter
+      if (filter.minArea != null && room.area < filter.minArea!) {
+        return false;
+      }
+      // Amenities filter
+      if (filter.amenities.isNotEmpty) {
+        for (var amenity in filter.amenities) {
+          if (!room.amenities.contains(amenity)) {
+            return false;
+          }
+        }
+      }
       return true;
     }).toList();
     return list;
@@ -114,19 +132,34 @@ class RoomState {
 }
 
 class RoomNotifier extends StateNotifier<RoomState> {
-  RoomNotifier() : super(const RoomState()) {
-    loadRooms();
+  final RoomRepository repository;
+  final UserRole? userRole;
+  StreamSubscription<List<Room>>? _subscription;
+
+  RoomNotifier(this.repository, this.userRole) : super(const RoomState()) {
+    _initSubscription();
   }
 
-  Future<void> loadRooms() async {
+  void _initSubscription() {
     state = state.copyWith(isLoading: true);
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      // In real app: fetch from Firebase Realtime Database
-      state = state.copyWith(rooms: MockData.rooms, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Không thể tải danh sách phòng');
-    }
+    
+    // Tải tất cả phòng để Tenant có thể định vị và xem chi tiết phòng đã thuê/cọc của mình
+    const RoomStatus? statusFilter = null;
+    
+    _subscription = repository.watchRooms(statusFilter: statusFilter).listen(
+      (rooms) {
+        state = state.copyWith(rooms: rooms, isLoading: false);
+      },
+      onError: (e) {
+        state = state.copyWith(isLoading: false, error: 'Không thể tải danh sách phòng: $e');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   void search(String query) {
@@ -152,7 +185,9 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
 // Providers
 final roomProvider = StateNotifierProvider<RoomNotifier, RoomState>((ref) {
-  return RoomNotifier();
+  final repository = ref.watch(roomRepositoryProvider);
+  final user = ref.watch(authControllerProvider).user;
+  return RoomNotifier(repository, user?.role);
 });
 
 final filteredRoomsProvider = Provider<List<Room>>((ref) {

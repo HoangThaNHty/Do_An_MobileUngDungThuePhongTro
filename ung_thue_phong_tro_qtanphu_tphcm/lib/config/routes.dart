@@ -3,10 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/auth_controller.dart';
 import '../models/entities/user.dart';
+import '../models/entities/room.dart';
 import '../config/constants.dart';
 
 // Screens — Shared
 import '../views/screens/shared/splash_screen.dart';
+import '../views/screens/shared/chat_list_screen.dart';
+import '../views/screens/shared/chat_screen.dart';
 // Screens — Auth
 import '../views/screens/auth/login_screen.dart';
 import '../views/screens/auth/register_screen.dart';
@@ -19,10 +22,15 @@ import '../views/screens/tenant/my_rentals_screen.dart';
 import '../views/screens/tenant/my_bills_screen.dart';
 import '../views/screens/tenant/contact_screen.dart';
 import '../views/screens/tenant/privacy_screen.dart';
+import '../views/screens/tenant/profile_screen.dart';
+import '../views/screens/tenant/payment_screen.dart';
 // Screens — Landlord
 import '../views/screens/landlord/dashboard_screen.dart';
 import '../views/screens/landlord/manage_tenants_screen.dart';
 import '../views/screens/landlord/room_list_screen.dart';
+import '../views/screens/landlord/room_detail_screen.dart';
+import '../views/screens/landlord/landlord_map_screen.dart';
+import '../views/screens/landlord/profile_screen.dart';
 import '../views/screens/landlord/create_bill_screen.dart';
 import '../views/screens/landlord/create_room/step1_screen.dart';
 import '../views/screens/landlord/create_room/step2_screen.dart';
@@ -145,8 +153,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
+            path: '/tenant/profile',
+            builder: (context, state) => const TenantProfileScreen(),
+          ),
+          GoRoute(
             path: '/tenant/privacy',
             builder: (context, state) => const PrivacyScreen(),
+          ),
+          GoRoute(
+            path: '/tenant/payment',
+            builder: (context, state) {
+              final args = state.extra as Map<String, dynamic>;
+              return PaymentScreen(
+                room: args['room'] as Room,
+                depositMonths: args['depositMonths'] as int,
+                amount: args['amount'] as int,
+                moveInDate: args['moveInDate'] as DateTime,
+              );
+            },
           ),
         ],
       ),
@@ -162,6 +186,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/landlord/rooms',
             builder: (context, state) => const RoomListScreen(),
+            routes: [
+              GoRoute(
+                path: 'detail/:id',
+                builder: (context, state) => LandlordRoomDetailScreen(
+                  roomId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/landlord/map',
+            builder: (context, state) => const LandlordMapScreen(),
+          ),
+          GoRoute(
+            path: '/landlord/profile',
+            builder: (context, state) => const LandlordProfileScreen(),
           ),
           GoRoute(
             path: '/landlord/tenants',
@@ -195,6 +235,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+
+      // ─── Chat Shared Routes ─────────────────────
+      GoRoute(
+        path: '/chat-list',
+        builder: (context, state) => const ChatListScreen(),
+      ),
+      GoRoute(
+        path: '/chat/:chatId',
+        builder: (context, state) => ChatScreen(
+          chatId: state.pathParameters['chatId']!,
+        ),
       ),
     ],
 

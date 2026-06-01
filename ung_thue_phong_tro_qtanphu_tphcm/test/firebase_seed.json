@@ -1,0 +1,452 @@
+﻿{
+  "users": {
+    "RcAVwODEBtRprXaK9WKFPfrvyZ13": {
+      "id": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "fullName": "Nguyễn Văn An",
+      "email": "annguyen@email.com",
+      "phone": "0901234567",
+      "role": "landlord",
+      "avatarUrl": "https://i.pravatar.cc/150?img=3",
+      "createdAt": "2025-06-01T00:00:00.000Z",
+      "gender": "Nam",
+      "birthYear": 1985,
+      "hometown": "Hà Nội",
+      "occupation": "Kinh doanh tự do",
+      "bio": "Chủ nhà trọ thân thiện, luôn hỗ trợ người thuê hết mình."
+    },
+    "wqgFPH9JINQKPnr6CKuBEYGa73S2": {
+      "id": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "fullName": "Trần Thị Bích",
+      "email": "bichtran@email.com",
+      "phone": "0912345678",
+      "role": "landlord",
+      "avatarUrl": "https://i.pravatar.cc/150?img=5",
+      "createdAt": "2025-08-15T00:00:00.000Z",
+      "gender": "Nữ",
+      "birthYear": 1990,
+      "hometown": "TP.HCM",
+      "occupation": "Nhân viên văn phòng",
+      "bio": "Quản lý phòng trọ sạch sẽ, trật tự."
+    },
+    "r4ju3iGOqteScwi4LQyYb2WpWE72": {
+      "id": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+      "fullName": "Lê Hoàng Nam",
+      "email": "namle@email.com",
+      "phone": "0923456789",
+      "role": "tenant",
+      "avatarUrl": "https://i.pravatar.cc/150?img=7",
+      "createdAt": "2026-01-05T00:00:00.000Z",
+      "gender": "Nam",
+      "birthYear": 2002,
+      "hometown": "Đồng Nai",
+      "occupation": "Sinh viên Đại học",
+      "bio": "Sinh viên năm 3, ngoan ngoãn, giữ gìn vệ sinh chung."
+    },
+    "mdOhJ3W836OGPLOUQjHuMrOUn962": {
+      "id": "mdOhJ3W836OGPLOUQjHuMrOUn962",
+      "fullName": "Phạm Thị Lan",
+      "email": "lanpham@email.com",
+      "phone": "0934567890",
+      "role": "tenant",
+      "avatarUrl": "https://i.pravatar.cc/150?img=9",
+      "createdAt": "2026-02-10T00:00:00.000Z",
+      "gender": "Nữ",
+      "birthYear": 1998,
+      "hometown": "Lâm Đồng",
+      "occupation": "Kế toán",
+      "bio": "Người đi làm văn phòng ổn định, sống yên tĩnh."
+    },
+    "ZL5CO8QAieRspg3OkLLhZbuCZb2": {
+      "id": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+      "fullName": "Thanh Nguyen hoang",
+      "email": "nguyenhoangthanh25@gmail.com",
+      "phone": "0987654321",
+      "role": "tenant",
+      "avatarUrl": "https://i.pravatar.cc/150?img=12",
+      "createdAt": "2026-01-05T00:00:00.000Z",
+      "gender": "Nam",
+      "birthYear": 2002,
+      "hometown": "TP.HCM",
+      "occupation": "Lập trình viên",
+      "bio": "Google Auth Developer."
+    }
+  },
+  "rooms": {
+    "room_tanphu_001": {
+      "id": "room_tanphu_001",
+      "title": "Phòng Trọ Ban Công Lớn - Lũy Bán Bích",
+      "address": "452 Lũy Bán Bích, Phường Hòa Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 28.0,
+      "price": 3800000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80",
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "Nóng lạnh", "WiFi", "Ban công", "Bếp", "Giữ xe"],
+      "description": "Phòng trọ mới xây dựng, ban công cực lớn, ánh sáng tự nhiên đầy đủ. Nằm ngay mặt tiền đường Lũy Bán Bích, giao thông cực kỳ thuận lợi, gần ĐH Văn Hiến và Aeon Mall Tân Phú.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.781682,
+      "longitude": 106.637821,
+      "viewCount": 245,
+      "createdAt": "2026-04-10T12:00:00.000Z"
+    },
+    "room_tanphu_002": {
+      "id": "room_tanphu_002",
+      "title": "Căn Hộ Studio Full Nội Thất Cao Cấp",
+      "address": "88/12 Kênh Tân Hóa, Phường Phú Trung, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 35.0,
+      "price": 5200000,
+      "status": "rented",
+      "images": [
+        "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "Nóng lạnh", "Tủ lạnh", "WiFi", "Bếp", "Máy giặt", "Tivi", "Bảo vệ"],
+      "description": "Căn hộ Studio thiết kế hiện đại, đầy đủ nội thất cao cấp giường nệm tủ quần áo bếp từ. Giờ giấc tự do, khóa vân tay, có thang máy, camera an ninh bảo vệ 24/7.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.774582,
+      "longitude": 106.639521,
+      "viewCount": 512,
+      "createdAt": "2026-04-12T15:30:00.000Z"
+    },
+    "room_tanphu_003": {
+      "id": "room_tanphu_003",
+      "title": "Phòng Trọ Giá Rẻ Cho Sinh Viên Gần ĐH Công Thương",
+      "address": "23/5 Chế Lan Viên, Phường Tây Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 20.0,
+      "price": 2300000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&q=80",
+        "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80"
+      ],
+      "amenities": ["WiFi", "Bếp", "Giữ xe"],
+      "description": "Phòng trọ giá bình dân, sạch sẽ thoáng mát. Rất gần trường Đại học Công Thương TP.HCM (HUIT), phù hợp cho 2 bạn sinh viên ở ghép tiết kiệm chi phí.",
+      "landlordId": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "latitude": 10.806282,
+      "longitude": 106.629421,
+      "viewCount": 98,
+      "createdAt": "2026-05-01T08:15:00.000Z"
+    },
+    "room_tanphu_004": {
+      "id": "room_tanphu_004",
+      "title": "Phòng Gác Lửng Rộng Rãi Yên Tĩnh",
+      "address": "156 Vườn Lài, Phường Phú Thọ Hòa, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 24.0,
+      "price": 3100000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "Nóng lạnh", "WiFi", "Bếp", "Giữ xe"],
+      "description": "Phòng có gác lửng đúc sạch sẽ, không gian rộng rãi để đồ thoải mái. Khu dân cư an ninh, yên tĩnh, không ngập nước.",
+      "landlordId": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "latitude": 10.789282,
+      "longitude": 106.627821,
+      "viewCount": 182,
+      "createdAt": "2026-05-05T09:40:00.000Z"
+    },
+    "room_tanphu_005": {
+      "id": "room_tanphu_005",
+      "title": "Căn Hộ Mini Có Máy Giặt Riêng - Tây Thạnh",
+      "address": "38 Lưu Chí Hiếu, Phường Tây Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 22.0,
+      "price": 3400000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "WiFi", "Máy giặt", "Bếp", "Giữ xe"],
+      "description": "Căn hộ mini mới hoàn thiện, đầy đủ tiện nghi cơ bản, tủ bếp gỗ sang trọng và máy giặt riêng tại ban công. Khu vực an ninh, giờ giấc tự do không chung chủ.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.809182,
+      "longitude": 106.626121,
+      "viewCount": 114,
+      "createdAt": "2026-05-18T10:00:00.000Z"
+    },
+    "room_tanphu_006": {
+      "id": "room_tanphu_006",
+      "title": "Phòng Trọ Gác Cao Cấp Gần Aeon Mall",
+      "address": "12 Bờ Bao Tân Thắng, Phường Sơn Kỳ, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 25.0,
+      "price": 4000000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "Nóng lạnh", "WiFi", "Tủ lạnh", "Bếp", "Bảo vệ"],
+      "description": "Căn phòng gác cao ráo đúc bê tông kiên cố, ngay bên cạnh trung tâm thương mại Aeon Mall Tân Phú. Có bảo vệ coi xe 24/24, hệ thống camera an ninh tối tân.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.798182,
+      "longitude": 106.621521,
+      "viewCount": 219,
+      "createdAt": "2026-05-20T08:30:00.000Z"
+    },
+    "room_tanphu_007": {
+      "id": "room_tanphu_007",
+      "title": "Căn Hộ Dịch Vụ Studio Hàng Không",
+      "address": "55/8 Tân Sơn Nhì, Phường Tân Sơn Nhì, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 30.0,
+      "price": 4500000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "Nóng lạnh", "WiFi", "Tủ lạnh", "Bếp", "Máy giặt", "Ban công"],
+      "description": "Căn hộ dịch vụ thiết kế sang trọng, view thành phố thoáng đãng. Phù hợp cho tiếp viên hàng không hoặc nhân viên văn phòng năng động.",
+      "landlordId": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "latitude": 10.799582,
+      "longitude": 106.632821,
+      "viewCount": 138,
+      "createdAt": "2026-05-22T09:15:00.000Z"
+    },
+    "room_tanphu_008": {
+      "id": "room_tanphu_008",
+      "title": "Phòng Trọ Sinh Viên Gác Lửng Giá Tốt",
+      "address": "41 Thạch Lam, Phường Phú Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 18.0,
+      "price": 2500000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&q=80"
+      ],
+      "amenities": ["WiFi", "Bếp", "Giữ xe"],
+      "description": "Phòng trọ gác lửng sạch sẽ giá sinh viên, gần các trường đại học và chợ Thạch Lam. Điện nước tính theo giá nhà nước cực rẻ.",
+      "landlordId": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "latitude": 10.782882,
+      "longitude": 106.630821,
+      "viewCount": 85,
+      "createdAt": "2026-05-23T11:00:00.000Z"
+    },
+    "room_tanphu_009": {
+      "id": "room_tanphu_009",
+      "title": "Studio Khép Kín An Ninh Yên Tĩnh",
+      "address": "29 Thoại Ngọc Hầu, Phường Hòa Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 22.0,
+      "price": 3200000,
+      "status": "rented",
+      "images": [
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "WiFi", "Bếp", "Giữ xe", "Bảo vệ"],
+      "description": "Phòng trọ khép kín, an ninh tuyệt đối nhờ cổng khóa vân tay 2 lớp và bảo vệ túc trực. Khu dân cư yên tĩnh, văn minh lịch sự.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.783882,
+      "longitude": 106.634821,
+      "viewCount": 167,
+      "createdAt": "2026-05-24T14:00:00.000Z"
+    },
+    "room_edge_no_images": {
+      "id": "room_edge_no_images",
+      "title": "Phòng Trọ Trống Không Ảnh (Test Fallback Image UI)",
+      "address": "99 Hòa Bình, Phường Hòa Thạnh, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 18.0,
+      "price": 2000000,
+      "status": "available",
+      "images": [],
+      "amenities": ["WiFi", "Bếp"],
+      "description": "PHÒNG TEST BẤT THƯỜNG: Không có ảnh nào trong danh sách ảnh để kiểm thử khả năng xử lý fallback UI hiển thị ảnh mặc định của Widget RoomCard và RoomDetailScreen.",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "latitude": 10.776182,
+      "longitude": 106.634121,
+      "viewCount": 15,
+      "createdAt": "2026-05-10T10:00:00.000Z"
+    },
+    "room_edge_abnormal_price": {
+      "id": "room_edge_abnormal_price",
+      "title": "Căn Hộ Siêu Tưởng Giá Siêu Rẻ (Test Price Filter Edge)",
+      "address": "1 Lũy Bán Bích, Phường Tân Thới Hòa, Quận Tân Phú, TP.HCM",
+      "district": "Quận Tân Phú",
+      "area": 120.0,
+      "price": 10000,
+      "status": "available",
+      "images": [
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80"
+      ],
+      "amenities": ["Điều hòa", "WiFi"],
+      "description": "PHÒNG TEST BẤT THƯỜNG: Giá cực kỳ rẻ (chỉ 10.000đ/tháng) nhưng diện tích cực kỳ lớn (120m²) để kiểm thử tính chính xác của bộ lọc giá tìm kiếm và giới hạn hiển thị văn bản số tiền.",
+      "landlordId": "wqgFPH9JINQKPnr6CKuBEYGa73S2",
+      "latitude": 10.767582,
+      "longitude": 106.632121,
+      "viewCount": 33,
+      "createdAt": "2026-05-15T11:00:00.000Z"
+    }
+  },
+  "chats": {
+    "tenant_001_landlord_001": {
+      "id": "tenant_001_landlord_001",
+      "tenantId": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "tenantName": "Lê Hoàng Nam",
+      "landlordName": "Nguyễn Văn An",
+      "tenantAvatar": "https://i.pravatar.cc/150?img=7",
+      "landlordAvatar": "https://i.pravatar.cc/150?img=3",
+      "lastMessage": "Chào bạn! Tôi muốn xem phòng trọ Lũy Bán Bích vào chiều mai được không?",
+      "lastMessageTime": "2026-05-28T10:15:00.000Z",
+      "unreadByTenant": 0,
+      "unreadByLandlord": 1,
+      "messages": {
+        "msg_001": {
+          "id": "msg_001",
+          "senderId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+          "text": "Chào bạn! Cảm ơn bạn đã quan tâm đến phòng trọ của tôi. Bạn có cần tôi tư vấn thêm gì hay muốn hẹn lịch qua xem phòng thực tế không ạ?",
+          "timestamp": 1774780200000,
+          "isRead": true
+        },
+        "msg_002": {
+          "id": "msg_002",
+          "senderId": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+          "text": "Chào bạn! Tôi muốn xem phòng trọ Lũy Bán Bích vào chiều mai được không?",
+          "timestamp": 1774780500000,
+          "isRead": false
+        }
+      }
+    },
+    "google_tenant_landlord_001": {
+      "id": "google_tenant_landlord_001",
+      "tenantId": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "tenantName": "Thanh Nguyen hoang",
+      "landlordName": "Nguyễn Văn An",
+      "tenantAvatar": "https://i.pravatar.cc/150?img=12",
+      "landlordAvatar": "https://i.pravatar.cc/150?img=3",
+      "lastMessage": "Chào chủ trọ! Tôi đăng nhập Google test thử tính năng nhắn tin.",
+      "lastMessageTime": "2026-05-28T11:00:00.000Z",
+      "unreadByTenant": 0,
+      "unreadByLandlord": 0,
+      "messages": {
+        "msg_g01": {
+          "id": "msg_g01",
+          "senderId": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+          "text": "Chào chủ trọ! Tôi đăng nhập Google test thử tính năng nhắn tin.",
+          "timestamp": 1774783200000,
+          "isRead": true
+        }
+      }
+    }
+  },
+  "rentals": {
+    "rental_001": {
+      "id": "rental_001",
+      "roomId": "room_tanphu_002",
+      "roomTitle": "Căn Hộ Studio Full Nội Thất Cao Cấp",
+      "roomAddress": "88/12 Kênh Tân Hóa, Quận Tân Phú, TP.HCM",
+      "tenantId": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+      "tenantName": "Lê Hoàng Nam",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "monthlyRent": 5200000,
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2027-01-01T00:00:00.000Z",
+      "status": "active",
+      "contractUrl": "https://example.com/contracts/contract_001.pdf",
+      "createdAt": "2026-01-01T08:00:00.000Z"
+    },
+    "rental_google": {
+      "id": "rental_google",
+      "roomId": "room_tanphu_009",
+      "roomTitle": "Studio Khép Kín An Ninh Yên Tĩnh",
+      "roomAddress": "29 Thoại Ngọc Hầu, Phường Hòa Thạnh, Quận Tân Phú, TP.HCM",
+      "tenantId": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+      "tenantName": "Thanh Nguyen hoang",
+      "landlordId": "RcAVwODEBtRprXaK9WKFPfrvyZ13",
+      "monthlyRent": 3200000,
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2027-01-01T00:00:00.000Z",
+      "status": "active",
+      "contractUrl": "https://example.com/contracts/contract_google.pdf",
+      "createdAt": "2026-01-01T08:00:00.000Z"
+    }
+  },
+  "bills": {
+    "bill_001": {
+      "id": "bill_001",
+      "roomId": "room_tanphu_002",
+      "roomTitle": "Căn Hộ Studio Full Nội Thất Cao Cấp",
+      "tenantId": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+      "tenantName": "Lê Hoàng Nam",
+      "rentAmount": 5200000,
+      "electricityAmount": 350000,
+      "waterAmount": 80000,
+      "internetAmount": 100000,
+      "trashAmount": 20000,
+      "otherAmount": 0,
+      "electricityUsage": 100,
+      "waterUsage": 8,
+      "status": "paid",
+      "billingMonth": "2026-04-01T00:00:00.000Z",
+      "dueDate": "2026-04-10T00:00:00.000Z",
+      "paidDate": "2026-04-08T09:00:00.000Z",
+      "createdAt": "2026-04-01T00:00:00.000Z"
+    },
+    "bill_002": {
+      "id": "bill_002",
+      "roomId": "room_tanphu_002",
+      "roomTitle": "Căn Hộ Studio Full Nội Thất Cao Cấp",
+      "tenantId": "r4ju3iGOqteScwi4LQyYb2WpWE72",
+      "tenantName": "Lê Hoàng Nam",
+      "rentAmount": 5200000,
+      "electricityAmount": 420000,
+      "waterAmount": 90000,
+      "internetAmount": 100000,
+      "trashAmount": 20000,
+      "otherAmount": 0,
+      "electricityUsage": 120,
+      "waterUsage": 9,
+      "status": "unpaid",
+      "billingMonth": "2026-05-01T00:00:00.000Z",
+      "dueDate": "2026-06-10T00:00:00.000Z",
+      "createdAt": "2026-05-01T00:00:00.000Z"
+    },
+    "bill_google_01": {
+      "id": "bill_google_01",
+      "roomId": "room_tanphu_009",
+      "roomTitle": "Studio Khép Kín An Ninh Yên Tĩnh",
+      "tenantId": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+      "tenantName": "Thanh Nguyen hoang",
+      "rentAmount": 3200000,
+      "electricityAmount": 350000,
+      "waterAmount": 80000,
+      "internetAmount": 100000,
+      "trashAmount": 20000,
+      "otherAmount": 0,
+      "electricityUsage": 100,
+      "waterUsage": 8,
+      "status": "paid",
+      "billingMonth": "2026-04-01T00:00:00.000Z",
+      "dueDate": "2026-04-10T00:00:00.000Z",
+      "paidDate": "2026-04-08T09:00:00.000Z",
+      "createdAt": "2026-04-01T00:00:00.000Z"
+    },
+    "bill_google_02": {
+      "id": "bill_google_02",
+      "roomId": "room_tanphu_009",
+      "roomTitle": "Studio Khép Kín An Ninh Yên Tĩnh",
+      "tenantId": "ZL5CO8QAieRspg3OkLLhZbuCZb2",
+      "tenantName": "Thanh Nguyen hoang",
+      "rentAmount": 3200000,
+      "electricityAmount": 420000,
+      "waterAmount": 90000,
+      "internetAmount": 100000,
+      "trashAmount": 20000,
+      "otherAmount": 0,
+      "electricityUsage": 120,
+      "waterUsage": 9,
+      "status": "unpaid",
+      "billingMonth": "2026-05-01T00:00:00.000Z",
+      "dueDate": "2026-06-10T00:00:00.000Z",
+      "createdAt": "2026-05-01T00:00:00.000Z"
+    }
+  }
+}
+
