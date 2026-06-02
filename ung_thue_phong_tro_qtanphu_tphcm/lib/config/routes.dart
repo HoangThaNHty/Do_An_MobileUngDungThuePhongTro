@@ -24,6 +24,8 @@ import '../views/screens/tenant/contact_screen.dart';
 import '../views/screens/tenant/privacy_screen.dart';
 import '../views/screens/tenant/profile_screen.dart';
 import '../views/screens/tenant/payment_screen.dart';
+import '../views/screens/tenant/ai_copilot_screen.dart';
+
 // Screens — Landlord
 import '../views/screens/landlord/dashboard_screen.dart';
 import '../views/screens/landlord/manage_tenants_screen.dart';
@@ -171,6 +173,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 moveInDate: args['moveInDate'] as DateTime,
               );
             },
+          ),
+          GoRoute(
+            path: '/tenant/ai-copilot',
+            builder: (context, state) => const AICopilotScreen(),
           ),
         ],
       ),

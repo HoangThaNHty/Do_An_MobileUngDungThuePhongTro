@@ -389,6 +389,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/tenant/ai-copilot'),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.psychology, color: AppColors.onPrimary),
+        label: const Text(
+          'AI Copilot',
+          style: TextStyle(
+            color: AppColors.onPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 4,
+      ),
     );
   }
 
