@@ -29,7 +29,7 @@
 Ứng dụng đã được nâng cấp lên chuẩn sản phẩm thương mại cao cấp với các tính năng đột phá:
 
 ### 🔑 Authentication & Tester Hybrid Mode
-- **Chế độ Tester tiện lợi:** Khi quên mật khẩu, nhập bất kỳ email đuôi `@email.com` của hệ thống ảo (như `namle@email.com` hoặc `annguyen@email.com`), hệ thống tự động reset mật khẩu về `123456` trực quan trên màn hình để test tiếp mà không cần check hòm thư ảo. Nhập email thật sẽ gửi email khôi phục Gmail thực tế.
+- **Chế độ Tester tiện lợi:** Khi quên mật khẩu, nhập bất kỳ email đuôi `@email.com` của hệ thống ảo (như `khang.demo@email.com` hoặc `chutro.demo@email.com`), hệ thống tự động reset mật khẩu về `123456` trực quan trên màn hình để test tiếp mà không cần check hòm thư ảo. Nhập email thật sẽ gửi email khôi phục Gmail thực tế.
 - **Đồng bộ Avatar tức thì:** Đổi ảnh đại diện sẽ lưu đồng bộ ngay lập tức thời gian thực lên Firebase Realtime Database.
 
 ### 🏠 Tính năng Người Thuê (Tenant Premium)
@@ -149,11 +149,10 @@ Trước khi chạy ứng dụng lần đầu, hãy mở **PowerShell** tại th
 ./test/auto_auth_seeder.ps1
 ```
 
-* **Danh sách tài khoản test sau khi đồng bộ:**
-  1. **Chủ trọ Nguyễn Văn An:** `annguyen@email.com` / `123456` (Sở hữu 6 phòng trọ có sẵn, có lịch sử hóa đơn và người thuê).
-  2. **Chủ trọ Trần Thị Bích:** `bichtran@email.com` / `123456` (Sở hữu 4 phòng trọ trống).
-  3. **Khách thuê Lê Hoàng Nam:** `namle@email.com` / `123456`.
-  4. **Khách thuê Phạm Thị Lan:** `lanpham@email.com` / `123456`.
+* **Danh sách tài khoản demo sau khi đồng bộ:**
+  1. **Chủ trọ Nguyễn Văn An:** `chutro.demo@email.com` / `123456` (Sở hữu 6 phòng trọ đang trống, dữ liệu phù hợp để thuyết trình).
+  2. **Người thuê mới Trần Minh Khang:** `khang.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
+  3. **Người thuê mới Lê Ngọc Mai:** `mai.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
 
 ### 2. Thiết lập cấu hình API Keys (.env)
 Tạo file `.env` tại thư mục gốc của dự án `ung_thue_phong_tro_qtanphu_tphcm/` và điền cấu hình API của dự án:

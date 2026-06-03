@@ -14,6 +14,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchCtrl = TextEditingController();
+  List<Room> _suggestions = [];
   RangeValues _priceRange = const RangeValues(1000000, 15000000);
   double _minArea = 0;
   String? _selectedStatus;
@@ -21,18 +22,49 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final List<String> _selectedAmenities = [];
 
   static const List<String> _amenityOptions = [
-    'Điều hòa', 'Nóng lạnh', 'Tủ lạnh',
-    'WiFi', 'Máy giặt', 'Ban công', 'Bếp', 'Tivi',
+    'Điều hòa',
+    'Nóng lạnh',
+    'Tủ lạnh',
+    'WiFi',
+    'Máy giặt',
+    'Ban công',
+    'Bếp',
+    'Tivi',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (normalizeRoomSearchText(_searchCtrl.text).isEmpty) {
+      if (mounted) setState(() => _suggestions = []);
+      return;
+    }
+    final rooms = ref.read(roomProvider).rooms;
+    final filtered = rooms.where((room) {
+      return room.status == RoomStatus.available &&
+          roomMatchesTextQuery(room, _searchCtrl.text);
+    }).toList();
+    if (mounted) {
+      setState(() {
+        _suggestions = filtered;
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
     super.dispose();
   }
 
   void _applyFilter() {
     final notifier = ref.read(roomProvider.notifier);
+    final normalizedStatus = normalizeRoomSearchText(_selectedStatus ?? '');
     notifier.search(_searchCtrl.text);
     notifier.applyFilter(RoomFilter(
       district: _selectedDistrict,
@@ -41,7 +73,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       minArea: _minArea,
       status: _selectedStatus == null || _selectedStatus == 'Tất cả'
           ? null
-          : _selectedStatus == 'CÒN TRỐNG'
+          : normalizedStatus == normalizeRoomSearchText('CÒN TRỐNG')
               ? RoomStatus.available
               : RoomStatus.rented,
       amenities: _selectedAmenities,
@@ -52,6 +84,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _clearFilter() {
     setState(() {
       _searchCtrl.clear();
+      _suggestions.clear();
       _priceRange = const RangeValues(1000000, 15000000);
       _minArea = 0;
       _selectedStatus = null;
@@ -88,6 +121,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             // Search bar
             TextFormField(
+              key: const ValueKey('search_screen_text_input_field'),
               controller: _searchCtrl,
               decoration: const InputDecoration(
                 labelText: 'Từ khóa tìm kiếm',
@@ -95,6 +129,65 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 hintText: 'Tên phòng, địa chỉ...',
               ),
             ),
+            if (_suggestions.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 250),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                  boxShadow: const [AppShadows.card],
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  itemCount: _suggestions.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final room = _suggestions[index];
+                    return ListTile(
+                      dense: true,
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: room.images.isNotEmpty
+                            ? Image.network(
+                                room.images.first,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                width: 40,
+                                height: 40,
+                                color: AppColors.surfaceContainerLow,
+                                child:
+                                    const Icon(Icons.home_outlined, size: 20),
+                              ),
+                      ),
+                      title: Text(
+                        room.title,
+                        style: AppTypography.titleSM.copyWith(fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '${room.price.toVnd()}đ - ${room.address}',
+                        style: AppTypography.bodySM.copyWith(fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 12),
+                      onTap: () {
+                        context.push('/tenant/room/${room.id}');
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
 
             // Khoảng giá
@@ -148,12 +241,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 final isSelected = _selectedDistrict == d ||
                     (d == 'Tất cả' && _selectedDistrict == null);
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedDistrict =
-                      d == 'Tất cả' ? null : d),
+                  onTap: () => setState(
+                      () => _selectedDistrict = d == 'Tất cả' ? null : d),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: isSelected ? AppGradients.primaryButton : null,
                       color: isSelected ? null : AppColors.surfaceContainerLow,
@@ -196,26 +289,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: _amenityOptions.map((a) {
-                final isSelected = _selectedAmenities.contains(a);
+                final normalizedAmenity = normalizeRoomSearchText(a);
+                final isSelected = _selectedAmenities.any(
+                  (selected) =>
+                      normalizeRoomSearchText(selected) == normalizedAmenity,
+                );
                 return GestureDetector(
                   onTap: () => setState(() {
-                    isSelected
-                        ? _selectedAmenities.remove(a)
-                        : _selectedAmenities.add(a);
+                    if (isSelected) {
+                      _selectedAmenities.removeWhere(
+                        (selected) =>
+                            normalizeRoomSearchText(selected) ==
+                            normalizedAmenity,
+                      );
+                    } else {
+                      _selectedAmenities.add(a);
+                    }
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primary.withValues(alpha: 0.12)
                           : AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(AppRadius.chip),
                       border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
+                        color:
+                            isSelected ? AppColors.primary : Colors.transparent,
                         width: 1.5,
                       ),
                     ),

@@ -25,6 +25,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   int _currentImageIndex = 0;
   final PageController _pageCtrl = PageController();
   LatLng? _userLocation;
+  static const LatLng _tanPhuCenter = LatLng(10.7937, 106.6382);
 
   @override
   void initState() {
@@ -37,16 +38,54 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.low,
       );
+      final detectedLocation = LatLng(position.latitude, position.longitude);
       if (!mounted) return;
       setState(() {
-        _userLocation = LatLng(position.latitude, position.longitude);
+        _userLocation = _isLocationInVietnam(detectedLocation)
+            ? detectedLocation
+            : _tanPhuCenter;
       });
     } catch (_) {
       if (!mounted) return;
       // Fallback to Tan Phu district center
       setState(() {
-        _userLocation = const LatLng(10.7937, 106.6382);
+        _userLocation = _tanPhuCenter;
       });
+    }
+  }
+
+  bool _isLocationInVietnam(LatLng location) {
+    return location.latitude >= 8.0 &&
+        location.latitude <= 24.0 &&
+        location.longitude >= 102.0 &&
+        location.longitude <= 110.0;
+  }
+
+  Future<void> _openGoogleMapsDirections(Room room) async {
+    if (room.latitude == null || room.longitude == null) return;
+
+    final origin = _userLocation ?? _tanPhuCenter;
+    final destination = LatLng(room.latitude!, room.longitude!);
+    final url = Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'origin': '${origin.latitude},${origin.longitude}',
+        'destination': '${destination.latitude},${destination.longitude}',
+        'travelmode': 'driving',
+      },
+    );
+
+    HapticFeedback.mediumImpact();
+    final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể mở Google Maps để dẫn đường.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -81,7 +120,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
+                  color:
+                      AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.arrow_back, size: 20),
@@ -133,8 +173,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                           room.images.length,
                           (i) => AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            margin:
-                                const EdgeInsets.symmetric(horizontal: 3),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
                             width: i == _currentImageIndex ? 20 : 6,
                             height: 6,
                             decoration: BoxDecoration(
@@ -190,8 +229,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                   _infoRow(Icons.straighten_outlined,
                       '${room.area.toStringAsFixed(0)} m²'),
                   const SizedBox(height: AppSpacing.xs),
-                  _infoRow(Icons.visibility_outlined,
-                      '${room.viewCount} lượt xem'),
+                  _infoRow(
+                      Icons.visibility_outlined, '${room.viewCount} lượt xem'),
 
                   const SizedBox(height: AppSpacing.md),
                   // Google Map mini với Chỉ đường xem trước (Polyline) chuẩn Premium
@@ -210,8 +249,12 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                               // Căn camera ở giữa điểm người dùng và phòng trọ
                               target: _userLocation != null
                                   ? LatLng(
-                                      (_userLocation!.latitude + room.latitude!) / 2,
-                                      (_userLocation!.longitude + room.longitude!) / 2,
+                                      (_userLocation!.latitude +
+                                              room.latitude!) /
+                                          2,
+                                      (_userLocation!.longitude +
+                                              room.longitude!) /
+                                          2,
                                     )
                                   : LatLng(room.latitude!, room.longitude!),
                               zoom: _userLocation != null ? 13.0 : 15.0,
@@ -224,28 +267,36 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                             markers: {
                               Marker(
                                 markerId: const MarkerId('room_location_mini'),
-                                position: LatLng(room.latitude!, room.longitude!),
+                                position:
+                                    LatLng(room.latitude!, room.longitude!),
                                 infoWindow: InfoWindow(title: room.title),
                               ),
                               if (_userLocation != null)
                                 Marker(
-                                  markerId: const MarkerId('user_location_mini'),
+                                  markerId:
+                                      const MarkerId('user_location_mini'),
                                   position: _userLocation!,
-                                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
-                                  infoWindow: const InfoWindow(title: 'Vị trí của bạn'),
+                                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                                      BitmapDescriptor.hueCyan),
+                                  infoWindow:
+                                      const InfoWindow(title: 'Vị trí của bạn'),
                                 ),
                             },
                             polylines: _userLocation != null
                                 ? {
                                     Polyline(
-                                      polylineId: const PolylineId('route_preview'),
+                                      polylineId:
+                                          const PolylineId('route_preview'),
                                       points: [
                                         _userLocation!,
                                         LatLng(room.latitude!, room.longitude!),
                                       ],
                                       color: AppColors.primary,
                                       width: 4,
-                                      patterns: [PatternItem.dash(10), PatternItem.gap(10)], // Nét đứt sang trọng chuẩn Premium
+                                      patterns: [
+                                        PatternItem.dash(10),
+                                        PatternItem.gap(10)
+                                      ], // Nét đứt sang trọng chuẩn Premium
                                     ),
                                   }
                                 : {},
@@ -262,19 +313,16 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
                               onTap: () async {
-                                final url = Uri.parse(
-                                    'https://www.google.com/maps/dir/?api=1&destination=${room.latitude},${room.longitude}&travelmode=driving');
-                                if (await canLaunchUrl(url)) {
-                                  HapticFeedback.mediumImpact();
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
+                                await _openGoogleMapsDirections(room);
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.directions, color: Colors.white, size: 16),
+                                    const Icon(Icons.directions,
+                                        color: Colors.white, size: 16),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Dẫn đường (Google Maps)',
@@ -300,9 +348,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                   Wrap(
                     spacing: AppSpacing.sm,
                     runSpacing: AppSpacing.sm,
-                    children: room.amenities
-                        .map((a) => _amenityChip(a))
-                        .toList(),
+                    children:
+                        room.amenities.map((a) => _amenityChip(a)).toList(),
                   ),
 
                   const SizedBox(height: AppSpacing.lg),
@@ -362,8 +409,10 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
             const SizedBox(width: AppSpacing.sm),
             // Nút Nhắn tin liên hệ
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
-              onPressed: () => context.go('/tenant/room/${room.id}/contact/${room.landlordId}'),
+              icon: const Icon(Icons.chat_bubble_outline,
+                  color: AppColors.primary),
+              onPressed: () => context
+                  .go('/tenant/room/${room.id}/contact/${room.landlordId}'),
             ),
             const SizedBox(width: AppSpacing.sm),
             // CTA Button - Đặt cọc
@@ -392,7 +441,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
       ),
       builder: (context) {
         return _BookingBottomSheet(room: room);
@@ -461,8 +511,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Chủ nhà', style: AppTypography.bodySM),
-                Text('Xem thông tin liên hệ',
-                    style: AppTypography.titleSM),
+                Text('Xem thông tin liên hệ', style: AppTypography.titleSM),
               ],
             ),
           ),
@@ -486,11 +535,13 @@ class _BookingBottomSheet extends ConsumerStatefulWidget {
   const _BookingBottomSheet({required this.room});
 
   @override
-  ConsumerState<_BookingBottomSheet> createState() => _BookingBottomSheetState();
+  ConsumerState<_BookingBottomSheet> createState() =>
+      _BookingBottomSheetState();
 }
 
 class _BookingBottomSheetState extends ConsumerState<_BookingBottomSheet> {
-  final int _depositAmount = 500000; // Số tiền cọc giữ chỗ cố định (Holding Fee)
+  final int _depositAmount =
+      500000; // Số tiền cọc giữ chỗ cố định (Holding Fee)
   DateTime _moveInDate = DateTime.now().add(const Duration(days: 3));
 
   @override
@@ -530,7 +581,8 @@ class _BookingBottomSheetState extends ConsumerState<_BookingBottomSheet> {
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
+              border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2), width: 1),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,7 +620,7 @@ class _BookingBottomSheetState extends ConsumerState<_BookingBottomSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -584,7 +636,8 @@ class _BookingBottomSheetState extends ConsumerState<_BookingBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Ngày hẹn xem phòng/dọn vào:', style: AppTypography.bodyMD),
+              const Text('Ngày hẹn xem phòng/dọn vào:',
+                  style: AppTypography.bodyMD),
               TextButton.icon(
                 onPressed: () async {
                   final picked = await showDatePicker(
@@ -598,7 +651,8 @@ class _BookingBottomSheetState extends ConsumerState<_BookingBottomSheet> {
                   }
                 },
                 icon: const Icon(Icons.calendar_today_outlined, size: 16),
-                label: Text('${_moveInDate.day}/${_moveInDate.month}/${_moveInDate.year}'),
+                label: Text(
+                    '${_moveInDate.day}/${_moveInDate.month}/${_moveInDate.year}'),
               ),
             ],
           ),

@@ -9,17 +9,14 @@ Write-Host "==========================================================" -Foregro
 Write-Host "[START] STARTING FIREBASE AUTH SYNCHRONIZATION AND RTDB SEEDING" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# Define mock users with their roles and templates
+# Define demo users with their roles and template placeholders
 $mockUsers = @(
-    @{ email = "annguyen@email.com"; placeholder = "LANDLORD_AN_UID"; role = "Landlord Nguyen Van An" },
-    @{ email = "bichtran@email.com"; placeholder = "LANDLORD_BICH_UID"; role = "Landlord Tran Thi Bich" },
-    @{ email = "namle@email.com"; placeholder = "TENANT_NAM_UID"; role = "Tenant Le Hoang Nam" },
-    @{ email = "lanpham@email.com"; placeholder = "TENANT_LAN_UID"; role = "Tenant Pham Thi Lan" }
+    @{ email = "chutro.demo@email.com"; placeholder = "LANDLORD_DEMO_UID"; role = "Landlord Nguyen Van An" },
+    @{ email = "khang.demo@email.com"; placeholder = "TENANT_KHANG_UID"; role = "New Tenant Tran Minh Khang" },
+    @{ email = "mai.demo@email.com"; placeholder = "TENANT_MAI_UID"; role = "New Tenant Le Ngoc Mai" }
 )
 
-$uidMap = @{
-    "ZL5CO8QAieRspg3OkLLhZbuCZb2" = "ZL5CO8QAieRspg3OkLLhZbuCZb2" # Keep Google login static UID
-}
+$uidMap = @{}
 $password = "123456"
 
 foreach ($user in $mockUsers) {
@@ -79,9 +76,9 @@ foreach ($placeholder in $uidMap.Keys) {
     Write-Host "   $placeholder ==> $($uidMap[$placeholder])" -ForegroundColor Gray
 }
 
-# Ensure all 4 accounts have been mapped
-if ($uidMap.Count -lt 5) {
-    Write-Host "[WARN] Warning: Not all mock accounts were successfully synced or created. Database placeholders will not be fully replaced." -ForegroundColor Yellow
+# Ensure all 3 demo accounts have been mapped
+if ($uidMap.Count -lt 3) {
+    Write-Host "[WARN] Warning: Not all demo accounts were successfully synced or created. Database placeholders will not be fully replaced." -ForegroundColor Yellow
 }
 
 # 3. Read the firebase_seed_template.json
@@ -113,13 +110,14 @@ Write-Host "[SEED] Seeding synchronized data to Firebase Realtime Database ($dbU
 try {
     # Send PUT request to replace all database nodes
     $response = Invoke-RestMethod -Uri $dbUrl -Method Put -Body $templateContent -ContentType "application/json; charset=utf-8"
-    Write-Host "[SUCCESS] SUCCESS! Firebase Realtime Database has been successfully seeded and is perfectly in-sync with Authentication!" -ForegroundColor Green
+    Write-Host "[SUCCESS] SUCCESS! Firebase Realtime Database has been seeded with clean presentation demo data." -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
-    Write-Host "[CREDENTIALS] TEST CREDENTIALS (PASSWORD: 123456 FOR ALL):" -ForegroundColor White
-    Write-Host "   1. Landlord An:  annguyen@email.com" -ForegroundColor White
-    Write-Host "   2. Landlord Bich: bichtran@email.com" -ForegroundColor White
-    Write-Host "   3. Tenant Nam:   namle@email.com" -ForegroundColor White
-    Write-Host "   4. Tenant Lan:   lanpham@email.com" -ForegroundColor White
+    Write-Host "[CREDENTIALS] DEMO CREDENTIALS (PASSWORD: 123456 FOR ALL):" -ForegroundColor White
+    Write-Host "   1. Chu tro Nguyen Van An:     chutro.demo@email.com" -ForegroundColor White
+    Write-Host "   2. Nguoi thue moi Minh Khang: khang.demo@email.com" -ForegroundColor White
+    Write-Host "   3. Nguoi thue moi Ngoc Mai:   mai.demo@email.com" -ForegroundColor White
+    Write-Host "" -ForegroundColor White
+    Write-Host "[DATA] Rooms: 6 available rooms. Chats/Rentals/Bills/Reviews: empty for a clean demo flow." -ForegroundColor White
     Write-Host "==========================================================" -ForegroundColor Green
 } catch {
     Write-Host "[ERROR] Failed to seed Realtime Database! Error: $_" -ForegroundColor Red

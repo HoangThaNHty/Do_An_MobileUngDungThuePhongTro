@@ -4,6 +4,43 @@ import '../../models/entities/room.dart';
 import '../../models/entities/user.dart';
 import '../../repositories/room_repository.dart';
 import '../auth_controller.dart';
+
+String normalizeRoomSearchText(String value) {
+  var normalized = value.trim().toLowerCase();
+  const replacements = <String, String>{
+    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+    'e': 'èéẹẻẽêềếệểễ',
+    'i': 'ìíịỉĩ',
+    'o': 'òóọỏõôồốộổỗơờớợởỡ',
+    'u': 'ùúụủũưừứựửữ',
+    'y': 'ỳýỵỷỹ',
+    'd': 'đ',
+  };
+
+  for (final entry in replacements.entries) {
+    normalized = normalized.replaceAll(RegExp('[${entry.value}]'), entry.key);
+  }
+
+  return normalized.replaceAll(RegExp(r'\s+'), ' ');
+}
+
+bool roomMatchesTextQuery(Room room, String query) {
+  final normalizedQuery = normalizeRoomSearchText(query);
+  if (normalizedQuery.isEmpty) return true;
+
+  final fields = <String>[
+    room.title,
+    room.address,
+    room.district,
+    room.description,
+    ...room.amenities,
+  ];
+
+  return fields.any(
+    (field) => normalizeRoomSearchText(field).contains(normalizedQuery),
+  );
+}
+
 // Room filter state
 class RoomFilter {
   final String? district;
@@ -74,16 +111,13 @@ class RoomState {
         return false;
       }
       // Search query
-      if (searchQuery.isNotEmpty) {
-        final q = searchQuery.toLowerCase();
-        if (!room.title.toLowerCase().contains(q) &&
-            !room.address.toLowerCase().contains(q) &&
-            !room.district.toLowerCase().contains(q)) {
-          return false;
-        }
+      if (!roomMatchesTextQuery(room, searchQuery)) {
+        return false;
       }
       // District filter
-      if (filter.district != null && room.district != filter.district) {
+      if (filter.district != null &&
+          normalizeRoomSearchText(room.district) !=
+              normalizeRoomSearchText(filter.district!)) {
         return false;
       }
       // Price filter
@@ -103,8 +137,10 @@ class RoomState {
       }
       // Amenities filter
       if (filter.amenities.isNotEmpty) {
+        final roomAmenities =
+            room.amenities.map(normalizeRoomSearchText).toSet();
         for (var amenity in filter.amenities) {
-          if (!room.amenities.contains(amenity)) {
+          if (!roomAmenities.contains(normalizeRoomSearchText(amenity))) {
             return false;
           }
         }
@@ -142,16 +178,17 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
   void _initSubscription() {
     state = state.copyWith(isLoading: true);
-    
+
     // Tải tất cả phòng để Tenant có thể định vị và xem chi tiết phòng đã thuê/cọc của mình
     const RoomStatus? statusFilter = null;
-    
+
     _subscription = repository.watchRooms(statusFilter: statusFilter).listen(
       (rooms) {
         state = state.copyWith(rooms: rooms, isLoading: false);
       },
       onError: (e) {
-        state = state.copyWith(isLoading: false, error: 'Không thể tải danh sách phòng: $e');
+        state = state.copyWith(
+            isLoading: false, error: 'Không thể tải danh sách phòng: $e');
       },
     );
   }
@@ -201,6 +238,18 @@ final roomByIdProvider = Provider.family<Room?, String>((ref, id) {
 // Districts list
 final districtsProvider = Provider<List<String>>((ref) {
   final rooms = ref.watch(roomProvider).rooms;
-  final districts = rooms.map((r) => r.district).toSet().toList()..sort();
+  final districtByKey = <String, String>{};
+  for (final room in rooms) {
+    final district = room.district.trim();
+    if (district.isEmpty) continue;
+    districtByKey.putIfAbsent(
+        normalizeRoomSearchText(district), () => district);
+  }
+  final districts = districtByKey.values.toList()
+    ..sort(
+      (a, b) => normalizeRoomSearchText(a).compareTo(
+        normalizeRoomSearchText(b),
+      ),
+    );
   return ['Tất cả', ...districts];
 });

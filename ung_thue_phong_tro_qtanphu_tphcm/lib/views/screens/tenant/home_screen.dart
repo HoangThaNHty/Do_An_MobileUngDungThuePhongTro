@@ -49,8 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, AppSpacing.md,
-                      AppSpacing.md, 0),
+                      AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
                   child: Row(
                     children: [
                       Expanded(
@@ -62,8 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               style: AppTypography.bodyMD,
                             ),
                             Text(
-                              user?.fullName.split(' ').last ??
-                                  'Bạn ơi! 👋',
+                              user?.fullName.split(' ').last ?? 'Bạn ơi! 👋',
                               style: AppTypography.headlineMD,
                             ),
                           ],
@@ -86,11 +84,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onTap: () => _showProfileSheet(context),
                         child: CircleAvatar(
                           radius: 22,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                          backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.12),
+                          backgroundImage: user?.avatarUrl != null &&
+                                  user!.avatarUrl!.isNotEmpty
                               ? NetworkImage(user.avatarUrl!)
                               : null,
-                          child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
+                          child: user?.avatarUrl == null ||
+                                  user!.avatarUrl!.isEmpty
                               ? Text(
                                   user?.fullName.isNotEmpty == true
                                       ? user!.fullName[0].toUpperCase()
@@ -174,8 +175,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 44,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     itemCount: districts.length,
                     separatorBuilder: (_, __) =>
                         const SizedBox(width: AppSpacing.sm),
@@ -188,8 +189,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           final filter = roomState.filter;
                           ref.read(roomProvider.notifier).applyFilter(
                                 district == 'Tất cả'
-                                    ? filter.copyWith(
-                                        clearDistrict: true)
+                                    ? filter.copyWith(clearDistrict: true)
                                     : filter.copyWith(district: district),
                               );
                         },
@@ -198,17 +198,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? AppGradients.primaryButton
-                                : null,
+                            gradient:
+                                isSelected ? AppGradients.primaryButton : null,
                             color: isSelected
                                 ? null
                                 : AppColors.surfaceContainerLowest,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.chip),
-                            boxShadow: isSelected
-                                ? null
-                                : const [AppShadows.card],
+                            borderRadius: BorderRadius.circular(AppRadius.chip),
+                            boxShadow:
+                                isSelected ? null : const [AppShadows.card],
                           ),
                           child: Text(
                             district,
@@ -237,8 +234,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceContainerLow,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.card),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     child: Row(
                       children: [
@@ -268,11 +264,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.only(
-                                left: AppSpacing.md),
+                            padding: const EdgeInsets.only(left: AppSpacing.md),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
                                   'Tổng phòng',
@@ -301,8 +295,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // ─── Section Header ───────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -322,7 +316,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // ─── Room List ────────────────────────
               if (roomState.isLoading)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.xxl),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md, 0, AppSpacing.md, AppSpacing.xxl),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => Padding(
@@ -334,7 +329,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             height: 112,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
                             ),
                           ),
                         ),
@@ -372,12 +368,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       (context, index) {
                         final room = filteredRooms[index];
                         return Padding(
-                          padding: const EdgeInsets.only(
-                              bottom: AppSpacing.md),
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
                           child: RoomCard(
                             room: room,
-                            onTap: () =>
-                                context.go('/tenant/room/${room.id}'),
+                            onTap: () => context.go('/tenant/room/${room.id}'),
                           ),
                         );
                       },
@@ -417,9 +411,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             CircleAvatar(
               radius: 36,
               backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-              backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                  ? NetworkImage(user.avatarUrl!)
-                  : null,
+              backgroundImage:
+                  user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
               child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
                   ? Text(
                       user?.fullName.isNotEmpty == true
