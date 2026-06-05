@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../controllers/auth_controller.dart';
@@ -17,12 +18,14 @@ class ContactScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rooms = ref.watch(roomProvider).rooms;
-    final landlordRoom = rooms.where((r) => r.landlordId == landlordId).toList();
+    final landlordRoom =
+        rooms.where((r) => r.landlordId == landlordId).toList();
     final landlordAsync = ref.watch(userByIdProvider(landlordId));
     final currentUser = ref.watch(currentUserProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Liên hệ chủ nhà'),
         leading: IconButton(
@@ -31,23 +34,27 @@ class ContactScreen extends ConsumerWidget {
         ),
       ),
       body: landlordAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (err, _) => Center(
-          child: Text('Lỗi tải thông tin chủ nhà: $err', style: AppTypography.bodyMD),
+          child: Text('Lỗi tải thông tin chủ nhà: $err',
+              style: AppTypography.bodyMD),
         ),
         data: (landlord) {
           if (landlord == null) {
             return const Center(
-              child: Text('Không tìm thấy thông tin chủ nhà', style: AppTypography.bodyMD),
+              child: Text('Không tìm thấy thông tin chủ nhà',
+                  style: AppTypography.bodyMD),
             );
           }
 
           final landlordName = landlord.fullName;
-          final landlordPhone = landlord.phone.isNotEmpty ? landlord.phone : 'Chưa cập nhật';
+          final landlordPhone =
+              landlord.phone.isNotEmpty ? landlord.phone : 'Chưa cập nhật';
           final landlordEmail = landlord.email;
-          const address = 'Quận Tân Phú, TP. Hồ Chí Minh'; // Địa bàn hoạt động của chủ trọ
+          const address =
+              'Quận Tân Phú, TP. Hồ Chí Minh'; // Địa bàn hoạt động của chủ trọ
           final ratingVal = landlord.averageRating ?? 5.0;
           final ratingStr = '${ratingVal.toStringAsFixed(1)} ★';
 
@@ -67,13 +74,18 @@ class ContactScreen extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundColor: AppColors.onPrimary.withValues(alpha: 0.2),
-                        backgroundImage: landlord.avatarUrl != null && landlord.avatarUrl!.isNotEmpty
+                        backgroundColor:
+                            AppColors.onPrimary.withValues(alpha: 0.2),
+                        backgroundImage: landlord.avatarUrl != null &&
+                                landlord.avatarUrl!.isNotEmpty
                             ? NetworkImage(landlord.avatarUrl!)
                             : null,
-                        child: landlord.avatarUrl == null || landlord.avatarUrl!.isEmpty
+                        child: landlord.avatarUrl == null ||
+                                landlord.avatarUrl!.isEmpty
                             ? Text(
-                                landlordName.isNotEmpty ? landlordName[0].toUpperCase() : 'C',
+                                landlordName.isNotEmpty
+                                    ? landlordName[0].toUpperCase()
+                                    : 'C',
                                 style: AppTypography.headlineMD.copyWith(
                                   color: AppColors.onPrimary,
                                   fontSize: 28,
@@ -113,6 +125,7 @@ class ContactScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: _statBox(
+                        context,
                         '${landlordRoom.length}',
                         'Phòng đang cho thuê',
                         Icons.home_work_outlined,
@@ -121,6 +134,7 @@ class ContactScreen extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: _statBox(
+                        context,
                         ratingStr,
                         'Đánh giá trung bình',
                         Icons.star_outline,
@@ -136,16 +150,18 @@ class ContactScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
+                    color: palette.surfaceLowest,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: const [AppShadows.card],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Thông tin liên hệ', style: AppTypography.titleSM),
+                      const Text('Thông tin liên hệ',
+                          style: AppTypography.titleSM),
                       const SizedBox(height: AppSpacing.md),
                       _contactRow(
+                        context: context,
                         icon: Icons.phone_outlined,
                         label: 'Số điện thoại',
                         value: landlordPhone,
@@ -153,6 +169,7 @@ class ContactScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _contactRow(
+                        context: context,
                         icon: Icons.email_outlined,
                         label: 'Email',
                         value: landlordEmail,
@@ -160,6 +177,7 @@ class ContactScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _contactRow(
+                        context: context,
                         icon: Icons.location_on_outlined,
                         label: 'Khu vực quản lý',
                         value: address,
@@ -175,7 +193,7 @@ class ContactScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
+                    color: palette.surfaceLowest,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: const [AppShadows.card],
                   ),
@@ -184,9 +202,9 @@ class ContactScreen extends ConsumerWidget {
                     children: [
                       const Text('Giờ tiếp nhận', style: AppTypography.titleSM),
                       const SizedBox(height: AppSpacing.sm),
-                      _workingRow('Thứ 2 – Thứ 6', '8:00 – 18:00'),
+                      _workingRow(context, 'Thứ 2 – Thứ 6', '8:00 – 18:00'),
                       const SizedBox(height: 4),
-                      _workingRow('Thứ 7 – Chủ nhật', '8:00 – 12:00'),
+                      _workingRow(context, 'Thứ 7 – Chủ nhật', '8:00 – 12:00'),
                     ],
                   ),
                 ),
@@ -198,7 +216,9 @@ class ContactScreen extends ConsumerWidget {
                   onPressed: () async {
                     if (landlord.phone.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Chủ nhà chưa cập nhật số điện thoại!')),
+                        const SnackBar(
+                            content:
+                                Text('Chủ nhà chưa cập nhật số điện thoại!')),
                       );
                       return;
                     }
@@ -223,20 +243,23 @@ class ContactScreen extends ConsumerWidget {
                   icon: Icons.phone,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                
+
                 // Chat button
                 AppButton(
                   text: 'Nhắn tin',
                   onPressed: () async {
                     if (currentUser == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vui lòng đăng nhập để nhắn tin!')),
+                        const SnackBar(
+                            content: Text('Vui lòng đăng nhập để nhắn tin!')),
                       );
                       return;
                     }
                     if (currentUser.id == landlord.id) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Bạn không thể tự nhắn tin cho chính mình!')),
+                        const SnackBar(
+                            content: Text(
+                                'Bạn không thể tự nhắn tin cho chính mình!')),
                       );
                       return;
                     }
@@ -248,7 +271,7 @@ class ContactScreen extends ConsumerWidget {
                         tenant: currentUser,
                         landlord: landlord,
                       );
-                      
+
                       if (context.mounted) {
                         context.push('/chat/$chatId');
                       }
@@ -272,23 +295,25 @@ class ContactScreen extends ConsumerWidget {
     );
   }
 
-  Widget _statBox(String value, String label, IconData icon,
+  Widget _statBox(
+      BuildContext context, String value, String label, IconData icon,
       {Color? valueColor}) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: palette.surfaceLowest,
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: const [AppShadows.card],
       ),
       child: Column(
         children: [
-          Icon(icon, size: 20, color: AppColors.primary),
+          Icon(icon, size: 20, color: palette.primary),
           const SizedBox(height: AppSpacing.xs),
           Text(
             value,
             style: AppTypography.titleMD.copyWith(
-              color: valueColor ?? AppColors.primary,
+              color: valueColor ?? palette.primary,
             ),
           ),
           Text(label, style: AppTypography.bodySM, textAlign: TextAlign.center),
@@ -298,21 +323,23 @@ class ContactScreen extends ConsumerWidget {
   }
 
   Widget _contactRow({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String value,
     required VoidCallback onCopy,
   }) {
+    final palette = context.palette;
     return Row(
       children: [
         Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: palette.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 18, color: AppColors.primary),
+          child: Icon(icon, size: 18, color: palette.primary),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
@@ -323,7 +350,7 @@ class ContactScreen extends ConsumerWidget {
               Text(
                 value,
                 style: AppTypography.bodyMD.copyWith(
-                  color: AppColors.onSurface,
+                  color: palette.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -332,14 +359,15 @@ class ContactScreen extends ConsumerWidget {
         ),
         IconButton(
           icon: const Icon(Icons.copy_outlined, size: 18),
-          color: AppColors.onSurfaceVariant,
+          color: palette.onSurfaceVariant,
           onPressed: onCopy,
         ),
       ],
     );
   }
 
-  Widget _workingRow(String days, String hours) {
+  Widget _workingRow(BuildContext context, String days, String hours) {
+    final palette = context.palette;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -347,7 +375,7 @@ class ContactScreen extends ConsumerWidget {
         Text(
           hours,
           style: AppTypography.bodyMD.copyWith(
-            color: AppColors.primary,
+            color: palette.primary,
             fontWeight: FontWeight.w600,
           ),
         ),

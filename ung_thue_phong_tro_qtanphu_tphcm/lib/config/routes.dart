@@ -5,6 +5,7 @@ import '../controllers/auth_controller.dart';
 import '../models/entities/user.dart';
 import '../models/entities/room.dart';
 import '../config/constants.dart';
+import 'theme.dart';
 
 // Screens — Shared
 import '../views/screens/shared/splash_screen.dart';
@@ -34,9 +35,11 @@ import '../views/screens/landlord/room_detail_screen.dart';
 import '../views/screens/landlord/landlord_map_screen.dart';
 import '../views/screens/landlord/profile_screen.dart';
 import '../views/screens/landlord/create_bill_screen.dart';
+import '../views/screens/landlord/landlord_ai_copilot_screen.dart';
 import '../views/screens/landlord/create_room/step1_screen.dart';
 import '../views/screens/landlord/create_room/step2_screen.dart';
 import '../views/screens/landlord/create_room/step3_screen.dart';
+import '../views/screens/admin/admin_dashboard_screen.dart';
 // Scaffolds
 import '../views/widgets/common/tenant_scaffold.dart';
 import '../views/widgets/common/landlord_scaffold.dart';
@@ -47,7 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: false,
-
     redirect: (context, state) {
       final isLoading = authState.isLoading;
       final isAuthenticated = authState.isAuthenticated;
@@ -64,22 +66,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && isAuthRoute) {
-        return user?.role == UserRole.landlord ? '/landlord' : '/tenant';
+        return switch (user?.role) {
+          UserRole.admin => '/admin',
+          UserRole.landlord => '/landlord',
+          _ => '/tenant',
+        };
       }
 
       if (isAuthenticated) {
         final role = user?.role;
-        if (role == UserRole.landlord && location.startsWith('/tenant')) {
+        if (role == UserRole.admin &&
+            (location.startsWith('/tenant') ||
+                location.startsWith('/landlord'))) {
+          return '/admin';
+        }
+        if (role == UserRole.landlord &&
+            (location.startsWith('/tenant') || location.startsWith('/admin'))) {
           return '/landlord';
         }
-        if (role == UserRole.tenant && location.startsWith('/landlord')) {
+        if (role == UserRole.tenant &&
+            (location.startsWith('/landlord') ||
+                location.startsWith('/admin'))) {
           return '/tenant';
         }
       }
 
       return null;
     },
-
     routes: [
       // ─── Splash ──────────────────────────────
       GoRoute(
@@ -99,13 +112,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'login',
-            builder: (context, state) => LoginScreen(
-              initialEmail: state.extra as String?,
+            builder: (context, state) => Theme(
+              data: AppTheme.lightTheme,
+              child: LoginScreen(
+                initialEmail: state.extra as String?,
+              ),
             ),
           ),
           GoRoute(
             path: 'register',
-            builder: (context, state) => const RegisterScreen(),
+            builder: (context, state) => Theme(
+              data: AppTheme.lightTheme,
+              child: const RegisterScreen(),
+            ),
           ),
         ],
       ),
@@ -218,9 +237,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const CreateBillScreen(),
           ),
           GoRoute(
+            path: '/landlord/ai-copilot',
+            builder: (context, state) => const LandlordAICopilotScreen(),
+          ),
+          GoRoute(
             path: '/landlord/create-room',
             redirect: (context, state) {
-              if (state.uri.path == '/landlord/create-room' || state.uri.path == '/landlord/create-room/') {
+              if (state.uri.path == '/landlord/create-room' ||
+                  state.uri.path == '/landlord/create-room/') {
                 return '/landlord/create-room/step1';
               }
               return null;
@@ -245,6 +269,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ─── Chat Shared Routes ─────────────────────
       GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
         path: '/chat-list',
         builder: (context, state) => const ChatListScreen(),
       ),
@@ -255,14 +283,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
     ],
-
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 64, color: AppColors.error),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               'Trang không tìm thấy',

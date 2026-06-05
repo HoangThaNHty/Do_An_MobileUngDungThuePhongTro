@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/room_video_player.dart';
 import '../../widgets/common/status_chips.dart';
 import '../../../models/entities/room.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -98,6 +100,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final room = ref.watch(roomByIdProvider(widget.roomId));
+    final palette = context.palette;
 
     if (room == null) {
       return Scaffold(
@@ -107,21 +110,20 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       body: CustomScrollView(
         slivers: [
           // ─── Image Carousel (SliverAppBar) ──────
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
-            backgroundColor: AppColors.surface,
+            backgroundColor: palette.surface,
             leading: GestureDetector(
               onTap: () => context.pop(),
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
+                  color: palette.surfaceLowest.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.arrow_back, size: 20),
@@ -140,11 +142,11 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                     itemBuilder: (context, index) {
                       if (room.images.isEmpty) {
                         return Container(
-                          color: AppColors.surfaceContainerLow,
-                          child: const Icon(
+                          color: palette.surfaceLow,
+                          child: Icon(
                             Icons.home_outlined,
                             size: 80,
-                            color: AppColors.onSurfaceVariant,
+                            color: palette.onSurfaceVariant,
                           ),
                         );
                       }
@@ -152,10 +154,10 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                         imageUrl: room.images[index],
                         fit: BoxFit.cover,
                         placeholder: (_, __) => Container(
-                          color: AppColors.surfaceContainerLow,
+                          color: palette.surfaceLow,
                         ),
                         errorWidget: (_, __, ___) => Container(
-                          color: AppColors.surfaceContainerLow,
+                          color: palette.surfaceLow,
                           child: const Icon(Icons.home_outlined, size: 80),
                         ),
                       );
@@ -178,7 +180,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                             height: 6,
                             decoration: BoxDecoration(
                               color: i == _currentImageIndex
-                                  ? AppColors.primary
+                                  ? palette.primary
                                   : AppColors.onPrimary.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(3),
                             ),
@@ -218,7 +220,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                   Text(
                     '${room.price.toVnd()}đ/tháng',
                     style: AppTypography.headlineMD.copyWith(
-                      color: AppColors.primary,
+                      color: palette.primary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -363,6 +365,16 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                     style: AppTypography.bodyMD,
                   ),
 
+                  if (room.videoUrl != null &&
+                      room.videoUrl!.trim().isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    RoomVideoPlayer(
+                      videoUrl: room.videoUrl!,
+                      subtitle:
+                          'Xem nhanh video thực tế của phòng trước khi đặt cọc',
+                    ),
+                  ],
+
                   const SizedBox(height: AppSpacing.lg),
 
                   // Landlord card
@@ -384,9 +396,9 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
           AppSpacing.md,
           AppSpacing.md + MediaQuery.of(context).padding.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          boxShadow: [AppShadows.bottomSheet],
+        decoration: BoxDecoration(
+          color: palette.surfaceLowest,
+          boxShadow: const [AppShadows.bottomSheet],
         ),
         child: Row(
           children: [
@@ -400,7 +412,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                   Text(
                     '${room.price.toVnd()}đ',
                     style: AppTypography.titleMD.copyWith(
-                      color: AppColors.primary,
+                      color: palette.primary,
                     ),
                   ),
                 ],
@@ -409,8 +421,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
             const SizedBox(width: AppSpacing.sm),
             // Nút Nhắn tin liên hệ
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline,
-                  color: AppColors.primary),
+              icon: Icon(Icons.chat_bubble_outline, color: palette.primary),
               onPressed: () => context
                   .go('/tenant/room/${room.id}/contact/${room.landlordId}'),
             ),
@@ -439,7 +450,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
@@ -453,7 +464,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   Widget _infoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.onSurfaceVariant),
+        Icon(icon, size: 16, color: context.palette.onSurfaceVariant),
         const SizedBox(width: AppSpacing.xs),
         Expanded(
           child: Text(text, style: AppTypography.bodyMD),
@@ -467,19 +478,19 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: context.palette.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle_outline,
-              size: 14, color: AppColors.primary),
+          Icon(Icons.check_circle_outline,
+              size: 14, color: context.palette.primary),
           const SizedBox(width: 4),
           Text(
             label,
             style: AppTypography.labelSM.copyWith(
-              color: AppColors.primary,
+              color: context.palette.primary,
               fontSize: 12,
             ),
           ),
@@ -492,17 +503,17 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
+        color: context.palette.surfaceLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            child: const Icon(
+            backgroundColor: context.palette.primary.withValues(alpha: 0.12),
+            child: Icon(
               Icons.person_outline,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -516,10 +527,10 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             onPressed: () => context
                 .go('/tenant/room/${room.id}/contact/${room.landlordId}'),

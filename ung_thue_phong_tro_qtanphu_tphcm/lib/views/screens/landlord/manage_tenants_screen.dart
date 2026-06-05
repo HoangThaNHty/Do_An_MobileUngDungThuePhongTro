@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_database/firebase_database.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/providers/bill_provider.dart';
 import '../../../models/entities/rental.dart';
@@ -21,24 +22,29 @@ class ManageTenantsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rentalsAsync = ref.watch(allRentalsProvider);
     final user = ref.watch(currentUserProvider);
+    final pendingPaymentCount = ref
+        .watch(pendingPaymentBillsProvider)
+        .maybeWhen(data: (bills) => bills.length, orElse: () => 0);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Quản lý người thuê'),
         automaticallyImplyLeading: false,
       ),
       body: rentalsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (rentals) {
           // Lọc chắc chắn chỉ hiển thị hợp đồng thuộc về Chủ trọ đang đăng nhập
-          final landlordRentals = rentals.where((r) => r.landlordId == user?.id).toList();
+          final landlordRentals =
+              rentals.where((r) => r.landlordId == user?.id).toList();
 
           if (landlordRentals.isEmpty) {
-            return _buildEmpty();
+            return _buildEmpty(context);
           }
           return Column(
             children: [
@@ -46,17 +52,33 @@ class ManageTenantsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                color: AppColors.surfaceContainerLow,
+                color: palette.surfaceLow,
                 child: Row(
                   children: [
-                    const Icon(Icons.people_outline,
-                        size: 16, color: AppColors.primary),
+                    Icon(Icons.people_outline,
+                        size: 16, color: palette.primary),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       '${landlordRentals.length} người đang thuê',
-                      style: AppTypography.bodyMD
-                          .copyWith(color: AppColors.primary),
+                      style:
+                          AppTypography.bodyMD.copyWith(color: palette.primary),
                     ),
+                    const Spacer(),
+                    if (pendingPaymentCount > 0) ...[
+                      Icon(
+                        Icons.notifications_active_outlined,
+                        size: 16,
+                        color: palette.warning,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        '$pendingPaymentCount chờ duyệt',
+                        style: AppTypography.bodySM.copyWith(
+                          color: palette.warning,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -78,14 +100,15 @@ class ManageTenantsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty() {
-    return const Center(
+  Widget _buildEmpty(BuildContext context) {
+    final palette = context.palette;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 72, color: AppColors.outlineVariant),
-          SizedBox(height: AppSpacing.md),
-          Text('Chưa có người thuê', style: AppTypography.titleSM),
+          Icon(Icons.people_outline, size: 72, color: palette.outlineVariant),
+          const SizedBox(height: AppSpacing.md),
+          const Text('Chưa có người thuê', style: AppTypography.titleSM),
         ],
       ),
     );
@@ -101,6 +124,15 @@ class _TenantCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userByIdProvider(rental.tenantId));
     final bookingCtrl = ref.read(bookingControllerProvider);
+    final palette = context.palette;
+    final billQuery = BillHistoryQuery(
+      roomId: rental.roomId,
+      tenantId: rental.tenantId,
+      roomTitle: rental.roomTitle,
+    );
+    final pendingPaymentCount = ref
+        .watch(pendingPaymentBillsForRentalProvider(billQuery))
+        .maybeWhen(data: (bills) => bills.length, orElse: () => 0);
 
     // Logic tự động kiểm tra quá hạn (Timeout check): Ngày hẹn gặp + 48 giờ
     final deadline = rental.startDate.add(const Duration(hours: 48));
@@ -116,10 +148,10 @@ class _TenantCard extends ConsumerWidget {
     }
 
     return userAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.md),
-          child: CircularProgressIndicator(color: AppColors.primary),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: CircularProgressIndicator(color: palette.primary),
         ),
       ),
       error: (e, _) => Center(child: Text('Lỗi tải thông tin: $e')),
@@ -140,14 +172,14 @@ class _TenantCard extends ConsumerWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLowest,
+            color: palette.surfaceLowest,
             borderRadius: BorderRadius.circular(AppRadius.card),
             boxShadow: const [AppShadows.card],
           ),
           child: Column(
             children: [
               // Header & Status
-               GestureDetector(
+              GestureDetector(
                 onTap: () => _showTenantProfile(context, user),
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -156,8 +188,11 @@ class _TenantCard extends ConsumerWidget {
                       colors: rental.status == RentalStatus.pending
                           ? [const Color(0xFFEF6C00), const Color(0xFFFFB74D)]
                           : rental.status == RentalStatus.cancelled
-                              ? [const Color(0xFFC62828), const Color(0xFFE57373)]
-                              : [AppColors.primary, AppColors.primaryContainer],
+                              ? [
+                                  const Color(0xFFC62828),
+                                  const Color(0xFFE57373)
+                                ]
+                              : [palette.primary, palette.primaryContainer],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -167,7 +202,8 @@ class _TenantCard extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.person_outline, color: AppColors.onPrimary, size: 20),
+                      const Icon(Icons.person_outline,
+                          color: AppColors.onPrimary, size: 20),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -175,13 +211,15 @@ class _TenantCard extends ConsumerWidget {
                           children: [
                             Text(
                               rental.tenantName,
-                              style: AppTypography.titleSM.copyWith(color: AppColors.onPrimary),
+                              style: AppTypography.titleSM
+                                  .copyWith(color: AppColors.onPrimary),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Nhấn để xem chi tiết hồ sơ người thuê ➔',
                               style: AppTypography.labelSM.copyWith(
-                                color: AppColors.onPrimary.withValues(alpha: 0.8),
+                                color:
+                                    AppColors.onPrimary.withValues(alpha: 0.8),
                                 fontSize: 9,
                                 fontWeight: FontWeight.normal,
                               ),
@@ -197,7 +235,8 @@ class _TenantCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppColors.onPrimary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(AppRadius.chip),
@@ -224,12 +263,12 @@ class _TenantCard extends ConsumerWidget {
                     Text(
                       rental.roomTitle,
                       style: AppTypography.titleSM.copyWith(
-                        color: AppColors.primary,
+                        color: palette.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    
+
                     // Basic Rows
                     _infoRow(Icons.location_on_outlined, rental.roomAddress),
                     const SizedBox(height: AppSpacing.xs),
@@ -240,11 +279,12 @@ class _TenantCard extends ConsumerWidget {
                           : 'Từ ${_fmtDate(rental.startDate)} đến ${_fmtDate(rental.endDate)}',
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    
+
                     // Phone number & Call/Chat Icons
                     Row(
                       children: [
-                        const Icon(Icons.phone_outlined, size: 15, color: AppColors.onSurfaceVariant),
+                        Icon(Icons.phone_outlined,
+                            size: 15, color: palette.onSurfaceVariant),
                         const SizedBox(width: 6),
                         Text(user.phone, style: AppTypography.bodyMD),
                         const Spacer(),
@@ -252,7 +292,8 @@ class _TenantCard extends ConsumerWidget {
                         IconButton(
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.primary),
+                          icon: Icon(Icons.chat_bubble_outline,
+                              size: 18, color: palette.primary),
                           onPressed: () async {
                             final currentUser = ref.read(currentUserProvider);
                             if (currentUser != null) {
@@ -260,25 +301,32 @@ class _TenantCard extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
-                                builder: (ctx) => const Center(
-                                  child: CircularProgressIndicator(color: AppColors.primary),
+                                builder: (ctx) => Center(
+                                  child: CircularProgressIndicator(
+                                      color: palette.primary),
                                 ),
                               );
-                              
+
                               try {
-                                final chatId = await ref.read(chatControllerProvider).getOrCreateChatRoom(
+                                final chatId = await ref
+                                    .read(chatControllerProvider)
+                                    .getOrCreateChatRoom(
                                       tenant: user,
                                       landlord: currentUser,
                                     );
                                 if (context.mounted) {
-                                  Navigator.of(context).pop(); // Đóng chỉ báo đang tải
+                                  Navigator.of(context)
+                                      .pop(); // Đóng chỉ báo đang tải
                                   context.push('/chat/$chatId');
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  Navigator.of(context).pop(); // Đóng chỉ báo đang tải
+                                  Navigator.of(context)
+                                      .pop(); // Đóng chỉ báo đang tải
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Lỗi khi mở cuộc trò chuyện: $e')),
+                                    SnackBar(
+                                        content: Text(
+                                            'Lỗi khi mở cuộc trò chuyện: $e')),
                                   );
                                 }
                               }
@@ -292,7 +340,8 @@ class _TenantCard extends ConsumerWidget {
                         IconButton(
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          icon: const Icon(Icons.call, size: 18, color: Color(0xFF2E7D32)),
+                          icon: Icon(Icons.call,
+                              size: 18, color: palette.success),
                           onPressed: () async {
                             final Uri launchUri = Uri(
                               scheme: 'tel',
@@ -301,11 +350,13 @@ class _TenantCard extends ConsumerWidget {
                             try {
                               await launchUrl(launchUri);
                             } catch (_) {
-                              await Clipboard.setData(ClipboardData(text: user.phone));
+                              await Clipboard.setData(
+                                  ClipboardData(text: user.phone));
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Thiết bị không hỗ trợ gọi điện. Số điện thoại đã được sao chép!'),
+                                    content: Text(
+                                        'Thiết bị không hỗ trợ gọi điện. Số điện thoại đã được sao chép!'),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -316,7 +367,7 @@ class _TenantCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    
+
                     // Rent money
                     _infoRow(
                       Icons.payments_outlined,
@@ -324,10 +375,48 @@ class _TenantCard extends ConsumerWidget {
                           ? 'Tiền cọc giữ phòng: 500.000đ (Ví trung gian bảo lãnh)'
                           : 'Tiền thuê hàng tháng: ${_formatCurrency(rental.monthlyRent)}đ/tháng',
                       valueColor: rental.status == RentalStatus.pending
-                          ? const Color(0xFFEF6C00)
-                          : AppColors.primary,
+                          ? palette.warning
+                          : palette.primary,
                     ),
-                    
+
+                    if (pendingPaymentCount > 0) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: palette.warningContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.button),
+                          border: Border.all(
+                              color: palette.warning.withValues(alpha: 0.45)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.notifications_active_outlined,
+                              color: palette.warning,
+                              size: 18,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                '$pendingPaymentCount hóa đơn khách đã báo chuyển tiền, cần chủ trọ duyệt.',
+                                style: AppTypography.bodySM.copyWith(
+                                  color: palette.warning,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  _showBillHistoryBottomSheet(context, ref),
+                              child: const Text('Xem'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // ─── Phần hồ sơ mở rộng của người đặt cọc ───
                     if (rental.status == RentalStatus.pending) ...[
                       const Divider(height: AppSpacing.md),
@@ -339,7 +428,7 @@ class _TenantCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      
+
                       // Gender, Birth Year
                       Row(
                         children: [
@@ -358,7 +447,7 @@ class _TenantCard extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      
+
                       // Hometown, Occupation
                       _infoRow(
                         Icons.home_outlined,
@@ -370,7 +459,7 @@ class _TenantCard extends ConsumerWidget {
                         'Công việc: ${user.occupation ?? 'Chưa cập nhật'}',
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      
+
                       // Bio
                       if (user.bio != null && user.bio!.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.xs),
@@ -379,7 +468,8 @@ class _TenantCard extends ConsumerWidget {
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(AppRadius.button),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.button),
                           ),
                           child: Text(
                             'Giới thiệu: "${user.bio}"',
@@ -390,22 +480,25 @@ class _TenantCard extends ConsumerWidget {
                           ),
                         ),
                       ],
-                      
+
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // Nút chủ trọ chủ động hủy/hoàn cọc cho khách
                       OutlinedButton.icon(
-                        onPressed: () => _onCancelDepositByLandlord(context, ref),
+                        onPressed: () =>
+                            _onCancelDepositByLandlord(context, ref),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFC62828),
                           side: const BorderSide(color: Color(0xFFFFCDD2)),
                           minimumSize: const Size(double.infinity, 40),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.button),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.button),
                           ),
                         ),
                         icon: const Icon(Icons.delete_outline, size: 16),
-                        label: const Text('Đồng ý hoàn cọc & Hủy giữ phòng', style: TextStyle(fontSize: 12)),
+                        label: const Text('Đồng ý hoàn cọc & Hủy giữ phòng',
+                            style: TextStyle(fontSize: 12)),
                       ),
                     ],
 
@@ -447,34 +540,41 @@ class _TenantCard extends ConsumerWidget {
                     if (rental.status == RentalStatus.active) ...[
                       const SizedBox(height: AppSpacing.sm),
                       ElevatedButton.icon(
-                        onPressed: () => _showBillHistoryBottomSheet(context, ref),
+                        onPressed: () =>
+                            _showBillHistoryBottomSheet(context, ref),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           minimumSize: const Size(double.infinity, 44),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.button),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.button),
                           ),
                         ),
                         icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                        label: const Text('Lịch sử Hóa đơn', style: AppTypography.button),
+                        label: const Text('Lịch sử Hóa đơn',
+                            style: AppTypography.button),
                       ),
                     ],
                     if (rental.status == RentalStatus.cancelled) ...[
                       const SizedBox(height: AppSpacing.sm),
                       OutlinedButton.icon(
-                        onPressed: () => _onDeleteCancelledTransaction(context, ref),
+                        onPressed: () =>
+                            _onDeleteCancelledTransaction(context, ref),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFC62828),
                           side: const BorderSide(color: Color(0xFFFFCDD2)),
                           minimumSize: const Size(double.infinity, 44),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.button),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.button),
                           ),
                         ),
-                        icon: const Icon(Icons.delete_forever_outlined, size: 18),
-                        label: const Text('Xóa lịch sử giao dịch', style: TextStyle(fontWeight: FontWeight.bold)),
+                        icon:
+                            const Icon(Icons.delete_forever_outlined, size: 18),
+                        label: const Text('Xóa lịch sử giao dịch',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ],
@@ -491,6 +591,13 @@ class _TenantCard extends ConsumerWidget {
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} lúc ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   void _showBillHistoryBottomSheet(BuildContext context, WidgetRef ref) {
+    final billQuery = BillHistoryQuery(
+      roomId: rental.roomId,
+      tenantId: rental.tenantId,
+      roomTitle: rental.roomTitle,
+    );
+    final palette = context.palette;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -498,9 +605,9 @@ class _TenantCard extends ConsumerWidget {
       builder: (ctx) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: palette.surface,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -513,7 +620,7 @@ class _TenantCard extends ConsumerWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.outlineVariant,
+                    color: palette.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -523,40 +630,46 @@ class _TenantCard extends ConsumerWidget {
                 'Lịch sử Hóa đơn',
                 style: AppTypography.titleMD.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: palette.primary,
                 ),
               ),
               Text(
                 'Phòng: ${rental.roomTitle}',
-                style: AppTypography.bodySM,
+                style: AppTypography.bodySM.copyWith(
+                  color: palette.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               const Divider(height: 1),
               Expanded(
                 child: Consumer(
                   builder: (context, ref, _) {
-                    final billsAsync = ref.watch(tenantBillsByRoomProvider(rental.roomId));
+                    final billsAsync =
+                        ref.watch(landlordBillHistoryViewProvider(billQuery));
                     return billsAsync.when(
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
+                      loading: () => Center(
+                        child:
+                            CircularProgressIndicator(color: palette.primary),
                       ),
                       error: (e, _) => Center(child: Text('Lỗi: $e')),
                       data: (bills) {
-                        if (bills.isEmpty) {
+                        final displayBills = bills;
+
+                        if (displayBills.isEmpty) {
                           return Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.receipt_long_outlined,
                                   size: 64,
-                                  color: AppColors.outlineVariant,
+                                  color: palette.outlineVariant,
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   'Chưa có hóa đơn nào cho phòng này',
                                   style: AppTypography.bodyMD.copyWith(
-                                    color: AppColors.onSurfaceVariant,
+                                    color: palette.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -565,120 +678,160 @@ class _TenantCard extends ConsumerWidget {
                         }
 
                         // Sắp xếp hóa đơn mới nhất lên đầu
-                        final sortedBills = List<Bill>.from(bills)
+                        final sortedBills = List<Bill>.from(displayBills)
                           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
                         return ListView.separated(
                           padding: const EdgeInsets.all(AppSpacing.md),
                           itemCount: sortedBills.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (context, index) {
                             final bill = sortedBills[index];
-                            final isDeposit = bill.electricityAmount == 0 && bill.waterAmount == 0 && bill.otherAmount == 0;
+                            final isDeposit = isDepositBill(bill);
                             final titleText = isDeposit
                                 ? 'Hóa đơn đặt cọc giữ chỗ'
                                 : 'Hóa đơn tháng ${bill.billingMonth.month}/${bill.billingMonth.year}';
 
-                            Color statusColor = const Color(0xFFC62828);
+                            Color statusColor = palette.danger;
                             String statusLabel = 'Chưa thanh toán';
-                            if (bill.status == BillStatus.unpaid && bill.paymentSubmitted) {
-                              statusColor = Colors.orange.shade900;
-                              statusLabel = 'Khách báo đã chuyển tiền - Cần xác nhận ⚠️';
+                            if (bill.status == BillStatus.unpaid &&
+                                bill.paymentSubmitted) {
+                              statusColor = palette.warning;
+                              statusLabel =
+                                  'Khách báo đã chuyển tiền - Cần xác nhận ⚠️';
                             } else if (bill.status == BillStatus.paid) {
-                              statusColor = const Color(0xFF2E7D32);
+                              statusColor = palette.success;
                               statusLabel = 'Đã thanh toán';
                             } else if (bill.status == BillStatus.overdue) {
-                              statusColor = const Color(0xFFE65100);
+                              statusColor = palette.warning;
                               statusLabel = 'Quá hạn';
                             }
 
                             return Container(
                               padding: const EdgeInsets.all(AppSpacing.md),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerLowest,
+                                color: palette.surfaceLowest,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                    color: palette.outlineVariant
+                                        .withValues(alpha: 0.3)),
                                 boxShadow: const [AppShadows.card],
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           titleText,
                                           style: AppTypography.titleSM.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.onSurface,
+                                            color: palette.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '📅 Lập lúc: ${_fmtDateTime(bill.createdAt)}',
                                           style: AppTypography.labelSM.copyWith(
-                                            color: AppColors.onSurfaceVariant,
+                                            color: palette.onSurfaceVariant,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           'Tổng tiền: ${_formatCurrency(bill.totalAmount)}đ',
                                           style: AppTypography.bodyMD.copyWith(
-                                            color: AppColors.primary,
+                                            color: palette.primary,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         const SizedBox(height: 6),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: statusColor.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(4),
+                                            color: statusColor.withValues(
+                                                alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                           child: Text(
                                             statusLabel,
-                                            style: AppTypography.labelSM.copyWith(
+                                            style:
+                                                AppTypography.labelSM.copyWith(
                                               color: statusColor,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 10,
                                             ),
                                           ),
                                         ),
-                                        if (bill.status == BillStatus.unpaid && bill.paymentSubmitted) ...[
+                                        if (bill.status == BillStatus.unpaid &&
+                                            bill.paymentSubmitted) ...[
                                           const SizedBox(height: 12),
-                                          const Divider(color: AppColors.outlineVariant, thickness: 0.5),
+                                          Divider(
+                                              color: palette.outlineVariant,
+                                              thickness: 0.5),
                                           const SizedBox(height: 8),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
                                             children: [
                                               ElevatedButton.icon(
-                                                onPressed: () => _onRejectPayment(context, ref, bill),
-                                                icon: const Icon(Icons.close, size: 16),
+                                                onPressed: () =>
+                                                    _onRejectPayment(
+                                                        context, ref, bill),
+                                                icon: const Icon(Icons.close,
+                                                    size: 16),
                                                 label: const Text('Từ chối'),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.red[50],
-                                                  foregroundColor: Colors.red[900],
+                                                  backgroundColor:
+                                                      palette.dangerContainer,
+                                                  foregroundColor:
+                                                      palette.danger,
                                                   elevation: 0,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 8),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    side: BorderSide(color: Colors.red.shade200),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    side: BorderSide(
+                                                        color: palette.danger
+                                                            .withValues(
+                                                                alpha: 0.35)),
                                                   ),
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
                                               ElevatedButton.icon(
-                                                onPressed: () => _onApprovePayment(context, ref, bill),
-                                                icon: const Icon(Icons.check, size: 16),
+                                                onPressed: () =>
+                                                    _onApprovePayment(
+                                                        context, ref, bill),
+                                                icon: const Icon(Icons.check,
+                                                    size: 16),
                                                 label: const Text('Duyệt'),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.green[50],
-                                                  foregroundColor: Colors.green[900],
+                                                  backgroundColor:
+                                                      palette.successContainer,
+                                                  foregroundColor:
+                                                      palette.success,
                                                   elevation: 0,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    side: BorderSide(color: Colors.green.shade200),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    side: BorderSide(
+                                                        color: palette.success
+                                                            .withValues(
+                                                                alpha: 0.35)),
                                                   ),
                                                 ),
                                               ),
@@ -688,10 +841,13 @@ class _TenantCard extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                  if (bill.status == BillStatus.unpaid && !bill.paymentSubmitted)
+                                  if (bill.status == BillStatus.unpaid &&
+                                      !bill.paymentSubmitted)
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Color(0xFFC62828)),
-                                      onPressed: () => _onDeleteBill(context, bill),
+                                      icon: Icon(Icons.delete_outline,
+                                          color: palette.danger),
+                                      onPressed: () =>
+                                          _onDeleteBill(context, ref, bill),
                                     ),
                                 ],
                               ),
@@ -710,17 +866,22 @@ class _TenantCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _onDeleteBill(BuildContext context, Bill bill) async {
+  Future<void> _onDeleteBill(
+      BuildContext context, WidgetRef ref, Bill bill) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hủy hóa đơn này?'),
-        content: Text('Bạn có chắc chắn muốn hủy vĩnh viễn hóa đơn chưa thanh toán của phòng ${bill.roomTitle}? Khách thuê sẽ không còn nhận được thông báo này nữa.'),
+        content: Text(
+            'Bạn có chắc chắn muốn hủy vĩnh viễn hóa đơn chưa thanh toán của phòng ${bill.roomTitle}? Khách thuê sẽ không còn nhận được thông báo này nữa.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Đồng ý hủy'),
           ),
         ],
@@ -730,6 +891,17 @@ class _TenantCard extends ConsumerWidget {
     if (confirmed == true) {
       try {
         await FirebaseDatabase.instance.ref('bills/${bill.id}').remove();
+        final query = BillHistoryQuery(
+          roomId: bill.roomId,
+          tenantId: bill.tenantId,
+          roomTitle: bill.roomTitle,
+        );
+        ref.invalidate(billsProvider(bill.tenantId));
+        ref.invalidate(allBillsProvider);
+        ref.invalidate(tenantBillsByRentalProvider(query));
+        ref.invalidate(landlordBillHistoryProvider(query));
+        ref.invalidate(landlordBillHistoryViewProvider(query));
+        ref.invalidate(pendingPaymentBillsProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -742,24 +914,30 @@ class _TenantCard extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
           );
         }
       }
     }
   }
 
-  Future<void> _onApprovePayment(BuildContext context, WidgetRef ref, Bill bill) async {
+  Future<void> _onApprovePayment(
+      BuildContext context, WidgetRef ref, Bill bill) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận nhận tiền?'),
-        content: Text('Bạn có chắc chắn muốn Duyệt hóa đơn ${_formatCurrency(bill.totalAmount)}đ của phòng ${bill.roomTitle}? Trạng thái hóa đơn sẽ chuyển thành Đã thanh toán.'),
+        content: Text(
+            'Bạn có chắc chắn muốn Duyệt hóa đơn ${_formatCurrency(bill.totalAmount)}đ của phòng ${bill.roomTitle}? Trạng thái hóa đơn sẽ chuyển thành Đã thanh toán.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E7D32)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFF2E7D32)),
             child: const Text('Duyệt nhận tiền'),
           ),
         ],
@@ -775,12 +953,24 @@ class _TenantCard extends ConsumerWidget {
           'paidDate': DateTime.now().toIso8601String(),
         });
 
+        final query = BillHistoryQuery(
+          roomId: bill.roomId,
+          tenantId: bill.tenantId,
+          roomTitle: bill.roomTitle,
+        );
         ref.invalidate(billsProvider(bill.tenantId));
+        ref.invalidate(allBillsProvider);
+        ref.invalidate(tenantBillsByRentalProvider(query));
+        ref.invalidate(landlordBillHistoryProvider(query));
+        ref.invalidate(landlordBillHistoryViewProvider(query));
+        ref.invalidate(pendingPaymentBillsProvider);
+        ref.invalidate(pendingPaymentBillsForRentalProvider(query));
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã phê duyệt hóa đơn thành công! Trạng thái cập nhật ĐÃ THANH TOÁN thời gian thực.'),
+              content: Text(
+                  'Đã phê duyệt hóa đơn thành công! Trạng thái cập nhật ĐÃ THANH TOÁN thời gian thực.'),
               backgroundColor: Color(0xFF2E7D32),
               behavior: SnackBarBehavior.floating,
             ),
@@ -789,24 +979,30 @@ class _TenantCard extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
           );
         }
       }
     }
   }
 
-  Future<void> _onRejectPayment(BuildContext context, WidgetRef ref, Bill bill) async {
+  Future<void> _onRejectPayment(
+      BuildContext context, WidgetRef ref, Bill bill) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Từ chối giao dịch?'),
-        content: Text('Bạn có chắc chắn muốn Từ chối thanh toán của phòng ${bill.roomTitle}? Hóa đơn sẽ trả về trạng thái Chưa thanh toán và thông báo lại cho khách thuê.'),
+        content: Text(
+            'Bạn có chắc chắn muốn Từ chối thanh toán của phòng ${bill.roomTitle}? Hóa đơn sẽ trả về trạng thái Chưa thanh toán và thông báo lại cho khách thuê.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Từ chối'),
           ),
         ],
@@ -820,12 +1016,24 @@ class _TenantCard extends ConsumerWidget {
           'paymentSubmitted': false,
         });
 
+        final query = BillHistoryQuery(
+          roomId: bill.roomId,
+          tenantId: bill.tenantId,
+          roomTitle: bill.roomTitle,
+        );
         ref.invalidate(billsProvider(bill.tenantId));
+        ref.invalidate(allBillsProvider);
+        ref.invalidate(tenantBillsByRentalProvider(query));
+        ref.invalidate(landlordBillHistoryProvider(query));
+        ref.invalidate(landlordBillHistoryViewProvider(query));
+        ref.invalidate(pendingPaymentBillsProvider);
+        ref.invalidate(pendingPaymentBillsForRentalProvider(query));
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã từ chối giao dịch thành công. Trạng thái đã trả về CHƯA THANH TOÁN.'),
+              content: Text(
+                  'Đã từ chối giao dịch thành công. Trạng thái đã trả về CHƯA THANH TOÁN.'),
               backgroundColor: Color(0xFFC62828),
               behavior: SnackBarBehavior.floating,
             ),
@@ -834,24 +1042,30 @@ class _TenantCard extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
           );
         }
       }
     }
   }
 
-  Future<void> _onDeleteCancelledTransaction(BuildContext context, WidgetRef ref) async {
+  Future<void> _onDeleteCancelledTransaction(
+      BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Xóa lịch sử giao dịch?'),
-        content: const Text('Bạn có chắc chắn muốn xóa lịch sử giao dịch đặt cọc đã hủy này khỏi danh sách hiển thị của bạn?'),
+        content: const Text(
+            'Bạn có chắc chắn muốn xóa lịch sử giao dịch đặt cọc đã hủy này khỏi danh sách hiển thị của bạn?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Xóa vĩnh viễn'),
           ),
         ],
@@ -878,24 +1092,30 @@ class _TenantCard extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
           );
         }
       }
     }
   }
 
-  Future<void> _onCancelDepositByLandlord(BuildContext context, WidgetRef ref) async {
+  Future<void> _onCancelDepositByLandlord(
+      BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Đồng ý Hoàn cọc & Hủy phòng?'),
-        content: const Text('Chủ trọ xác nhận hủy lịch hẹn này? Số tiền 500.000đ cọc giữ phòng của khách hàng sẽ được hoàn trả lại 100% về tài khoản của họ và phòng trọ của bạn sẽ được mở lại trạng thái Còn trống.'),
+        content: const Text(
+            'Chủ trọ xác nhận hủy lịch hẹn này? Số tiền 500.000đ cọc giữ phòng của khách hàng sẽ được hoàn trả lại 100% về tài khoản của họ và phòng trọ của bạn sẽ được mở lại trạng thái Còn trống.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Đóng')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Đóng')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Xác nhận hoàn cọc'),
           ),
         ],
@@ -911,7 +1131,8 @@ class _TenantCard extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã đồng ý hủy giữ phòng và tự động hoàn trả cọc thành công! 💸'),
+              content: Text(
+                  'Đã đồng ý hủy giữ phòng và tự động hoàn trả cọc thành công! 💸'),
               backgroundColor: Color(0xFF2E7D32),
               behavior: SnackBarBehavior.floating,
             ),
@@ -920,7 +1141,8 @@ class _TenantCard extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
           );
         }
       }
@@ -947,9 +1169,9 @@ class _TenantCard extends ConsumerWidget {
 
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 
   void _showTenantProfile(BuildContext context, AppUser user) {
@@ -978,7 +1200,8 @@ class _TenantCard extends ConsumerWidget {
                     top: Radius.circular(20),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 24, horizontal: AppSpacing.md),
                 child: Column(
                   children: [
                     // Avatar or Person Icon
@@ -987,12 +1210,15 @@ class _TenantCard extends ConsumerWidget {
                       backgroundColor: Colors.white,
                       child: CircleAvatar(
                         radius: 34,
-                        backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                            ? NetworkImage(user.avatarUrl!)
-                            : null,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        backgroundImage:
+                            user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                                ? NetworkImage(user.avatarUrl!)
+                                : null,
+                        backgroundColor:
+                            AppColors.primary.withValues(alpha: 0.1),
                         child: user.avatarUrl == null || user.avatarUrl!.isEmpty
-                            ? const Icon(Icons.person, size: 40, color: AppColors.primary)
+                            ? const Icon(Icons.person,
+                                size: 40, color: AppColors.primary)
                             : null,
                       ),
                     ),
@@ -1016,22 +1242,30 @@ class _TenantCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              
+
               // Profile details body
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   children: [
-                    _profileDetailRow(Icons.transgender_outlined, 'Giới tính', user.gender ?? 'Chưa cập nhật'),
+                    _profileDetailRow(Icons.transgender_outlined, 'Giới tính',
+                        user.gender ?? 'Chưa cập nhật'),
                     const Divider(height: AppSpacing.md, thickness: 0.5),
-                    _profileDetailRow(Icons.cake_outlined, 'Năm sinh', user.birthYear != null ? user.birthYear.toString() : 'Chưa cập nhật'),
+                    _profileDetailRow(
+                        Icons.cake_outlined,
+                        'Năm sinh',
+                        user.birthYear != null
+                            ? user.birthYear.toString()
+                            : 'Chưa cập nhật'),
                     const Divider(height: AppSpacing.md, thickness: 0.5),
-                    _profileDetailRow(Icons.phone_outlined, 'Số điện thoại', user.phone),
+                    _profileDetailRow(
+                        Icons.phone_outlined, 'Số điện thoại', user.phone),
                     const Divider(height: AppSpacing.md, thickness: 0.5),
-                    _profileDetailRow(Icons.home_outlined, 'Quê quán', user.hometown ?? 'Chưa cập nhật'),
+                    _profileDetailRow(Icons.home_outlined, 'Quê quán',
+                        user.hometown ?? 'Chưa cập nhật'),
                     const Divider(height: AppSpacing.md, thickness: 0.5),
-                    _profileDetailRow(Icons.work_outline, 'Nghề nghiệp', user.occupation ?? 'Chưa cập nhật'),
-                    
+                    _profileDetailRow(Icons.work_outline, 'Nghề nghiệp',
+                        user.occupation ?? 'Chưa cập nhật'),
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       const Divider(height: AppSpacing.md, thickness: 0.5),
                       const SizedBox(height: AppSpacing.xs),
@@ -1041,7 +1275,9 @@ class _TenantCard extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: AppColors.outlineVariant
+                                  .withValues(alpha: 0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1068,10 +1304,11 @@ class _TenantCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              
+
               // Close button
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
                 child: SizedBox(
                   width: double.infinity,
                   child: AppButton(

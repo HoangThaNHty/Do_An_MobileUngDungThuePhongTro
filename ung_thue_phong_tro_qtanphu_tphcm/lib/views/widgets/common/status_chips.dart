@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../models/entities/room.dart';
 import '../../../models/entities/bill.dart';
@@ -18,7 +19,7 @@ class RoomStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, label) = _resolveStyle(status);
+    final (bg, fg, label) = _resolveStyle(status, context.palette);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -38,16 +39,27 @@ class RoomStatusChip extends StatelessWidget {
     );
   }
 
-  static (Color, Color, String) _resolveStyle(RoomStatus status) {
+  static (Color, Color, String) _resolveStyle(
+    RoomStatus status,
+    AppPalette palette,
+  ) {
     switch (status) {
       case RoomStatus.available:
-        return (AppColors.available, AppColors.onAvailable, AppStrings.available);
+        return (
+          palette.successContainer,
+          palette.success,
+          AppStrings.available,
+        );
       case RoomStatus.rented:
-        return (AppColors.rented, AppColors.onRented, AppStrings.rented);
+        return (
+          palette.rentedContainer,
+          palette.onRentedContainer,
+          AppStrings.rented,
+        );
       case RoomStatus.overdue:
-        return (AppColors.overdue, AppColors.onOverdue, AppStrings.overdue);
+        return (palette.dangerContainer, palette.danger, AppStrings.overdue);
       case RoomStatus.pending:
-        return (AppColors.overdue, AppColors.onOverdue, AppStrings.pending);
+        return (palette.warningContainer, palette.warning, AppStrings.pending);
     }
   }
 }
@@ -62,20 +74,21 @@ class BillStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final (bg, fg, label) = switch (status) {
       BillStatus.paid => (
-          AppColors.available,
-          AppColors.onAvailable,
+          palette.successContainer,
+          palette.success,
           AppStrings.paid,
         ),
       BillStatus.unpaid => (
-          AppColors.surfaceContainerHigh,
-          AppColors.onSurfaceVariant,
+          palette.surfaceHigh,
+          palette.onSurfaceVariant,
           AppStrings.unpaid,
         ),
       BillStatus.overdue => (
-          AppColors.overdue,
-          AppColors.onOverdue,
+          palette.dangerContainer,
+          palette.danger,
           'QUÁ HẠN',
         ),
     };

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../models/entities/room.dart';
@@ -98,9 +99,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final districts = ref.watch(districtsProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Tìm kiếm nâng cao'),
         leading: IconButton(
@@ -134,10 +136,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Container(
                 constraints: const BoxConstraints(maxHeight: 250),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
+                  color: palette.surfaceLowest,
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                      color: palette.outlineVariant.withValues(alpha: 0.3)),
                   boxShadow: const [AppShadows.card],
                 ),
                 child: ListView.separated(
@@ -162,7 +164,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             : Container(
                                 width: 40,
                                 height: 40,
-                                color: AppColors.surfaceContainerLow,
+                                color: palette.surfaceLow,
                                 child:
                                     const Icon(Icons.home_outlined, size: 20),
                               ),
@@ -196,7 +198,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
+                color: palette.surfaceLowest,
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 boxShadow: const [AppShadows.card],
               ),
@@ -208,12 +210,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       Text(
                         '${_formatM(_priceRange.start.toInt())}tr',
                         style: AppTypography.titleSM
-                            .copyWith(color: AppColors.primary),
+                            .copyWith(color: palette.primary),
                       ),
                       Text(
                         '${_formatM(_priceRange.end.toInt())}tr',
                         style: AppTypography.titleSM
-                            .copyWith(color: AppColors.primary),
+                            .copyWith(color: palette.primary),
                       ),
                     ],
                   ),
@@ -222,8 +224,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     min: 500000,
                     max: 20000000,
                     divisions: 39,
-                    activeColor: AppColors.primary,
-                    inactiveColor: AppColors.surfaceContainerHigh,
+                    activeColor: palette.primary,
+                    inactiveColor: palette.surfaceHigh,
                     onChanged: (v) => setState(() => _priceRange = v),
                   ),
                 ],
@@ -249,7 +251,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: isSelected ? AppGradients.primaryButton : null,
-                      color: isSelected ? null : AppColors.surfaceContainerLow,
+                      color: isSelected ? null : palette.surfaceLow,
                       borderRadius: BorderRadius.circular(AppRadius.chip),
                     ),
                     child: Text(
@@ -257,7 +259,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       style: AppTypography.labelSM.copyWith(
                         color: isSelected
                             ? AppColors.onPrimary
-                            : AppColors.onSurfaceVariant,
+                            : palette.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -275,8 +277,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               min: 0,
               max: 80,
               divisions: 16,
-              activeColor: AppColors.primary,
-              inactiveColor: AppColors.surfaceContainerHigh,
+              activeColor: palette.primary,
+              inactiveColor: palette.surfaceHigh,
               label: '${_minArea.toInt()} m²',
               onChanged: (v) => setState(() => _minArea = v),
             ),
@@ -312,12 +314,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.12)
-                          : AppColors.surfaceContainerLow,
+                          ? palette.primary.withValues(alpha: 0.12)
+                          : palette.surfaceLow,
                       borderRadius: BorderRadius.circular(AppRadius.chip),
                       border: Border.all(
                         color:
-                            isSelected ? AppColors.primary : Colors.transparent,
+                            isSelected ? palette.primary : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -325,16 +327,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isSelected) ...[
-                          const Icon(Icons.check,
-                              size: 14, color: AppColors.primary),
+                          Icon(Icons.check, size: 14, color: palette.primary),
                           const SizedBox(width: 4),
                         ],
                         Text(
                           a,
                           style: AppTypography.labelSM.copyWith(
                             color: isSelected
-                                ? AppColors.primary
-                                : AppColors.onSurfaceVariant,
+                                ? palette.primary
+                                : palette.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),

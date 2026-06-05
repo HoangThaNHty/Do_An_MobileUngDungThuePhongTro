@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/entities/rental.dart';
 import '../../models/entities/room.dart';
 
 final roomRepositoryProvider = Provider<RoomRepository>((ref) {
@@ -14,23 +15,23 @@ class RoomRepository {
   // Lắng nghe tất cả các phòng (Có thể lọc theo status)
   Stream<List<Room>> watchRooms({RoomStatus? statusFilter}) {
     final ref = _db.ref('rooms');
-    
+
     return ref.onValue.map((event) {
       final snapshot = event.snapshot;
       if (!snapshot.exists) return [];
 
       final data = snapshot.value as Map<dynamic, dynamic>;
       final rooms = <Room>[];
-      
+
       data.forEach((key, value) {
         final roomData = Map<String, dynamic>.from(value as Map);
         final room = Room.fromMap(roomData, key.toString());
-        
+
         if (statusFilter == null || room.status == statusFilter) {
           rooms.add(room);
         }
       });
-      
+
       // Sắp xếp theo ngày tạo mới nhất
       rooms.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return rooms;
@@ -40,19 +41,19 @@ class RoomRepository {
   // Lắng nghe các phòng của một Chủ trọ cụ thể
   Stream<List<Room>> watchLandlordRooms(String landlordId) {
     final ref = _db.ref('rooms').orderByChild('landlordId').equalTo(landlordId);
-    
+
     return ref.onValue.map((event) {
       final snapshot = event.snapshot;
       if (!snapshot.exists) return [];
 
       final data = snapshot.value as Map<dynamic, dynamic>;
       final rooms = <Room>[];
-      
+
       data.forEach((key, value) {
         final roomData = Map<String, dynamic>.from(value as Map);
         rooms.add(Room.fromMap(roomData, key.toString()));
       });
-      
+
       // Sắp xếp theo ngày tạo mới nhất
       rooms.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return rooms;
@@ -67,6 +68,13 @@ class RoomRepository {
 
   // Cập nhật trạng thái phòng
   Future<void> updateRoomStatus(String roomId, RoomStatus newStatus) async {
+    if (newStatus == RoomStatus.available &&
+        await hasLockedRental(roomId: roomId)) {
+      throw Exception(
+        'Không thể chuyển phòng về còn trống khi phòng đang có đặt cọc hoặc hợp đồng đang thuê.',
+      );
+    }
+
     final ref = _db.ref('rooms').child(roomId);
     await ref.update({
       'status': newStatus.name,
@@ -81,7 +89,32 @@ class RoomRepository {
 
   // Xóa phòng
   Future<void> deleteRoom(String roomId) async {
+    if (await hasLockedRental(roomId: roomId)) {
+      throw Exception(
+        'Không thể gỡ bài đăng vì phòng đang có đặt cọc hoặc người thuê. Hãy xử lý/hủy hợp đồng trước.',
+      );
+    }
+
     final ref = _db.ref('rooms').child(roomId);
     await ref.remove();
+  }
+
+  Future<bool> hasLockedRental({required String roomId}) async {
+    final rentalsSnapshot = await _db.ref('rentals').get();
+    if (!rentalsSnapshot.exists) return false;
+
+    final rentalsData = rentalsSnapshot.value as Map<dynamic, dynamic>;
+    for (final entry in rentalsData.entries) {
+      final rentalMap = Map<String, dynamic>.from(entry.value as Map);
+      final rental = Rental.fromMap(rentalMap, entry.key.toString());
+      if (rental.roomId == roomId &&
+          rental.showToLandlord &&
+          (rental.status == RentalStatus.pending ||
+              rental.status == RentalStatus.active)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

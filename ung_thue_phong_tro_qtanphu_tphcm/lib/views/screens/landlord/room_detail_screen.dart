@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
+import '../../../controllers/providers/bill_provider.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../controllers/providers/create_room_provider.dart';
+import '../../../models/entities/rental.dart';
 import '../../../repositories/room_repository.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/room_video_player.dart';
 import '../../widgets/common/status_chips.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -19,9 +23,21 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final room = ref.watch(roomByIdProvider(roomId));
     final user = ref.watch(currentUserProvider);
+    final palette = context.palette;
+    final lockedByRental = ref.watch(allRentalsProvider).maybeWhen(
+          data: (rentals) => rentals.any(
+            (rental) =>
+                rental.roomId == roomId &&
+                rental.showToLandlord &&
+                (rental.status == RentalStatus.pending ||
+                    rental.status == RentalStatus.active),
+          ),
+          orElse: () => false,
+        );
 
     if (room == null || room.landlordId != user?.id) {
       return Scaffold(
+        backgroundColor: palette.surface,
         appBar: AppBar(title: const Text('Chi tiết phòng trọ')),
         body: Center(
           child: Column(
@@ -29,7 +45,9 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
-              const Text('Không tìm thấy phòng hoặc bạn không có quyền truy cập!', style: AppTypography.titleSM),
+              const Text(
+                  'Không tìm thấy phòng hoặc bạn không có quyền truy cập!',
+                  style: AppTypography.titleSM),
               TextButton(
                 onPressed: () => context.go('/landlord'),
                 child: const Text('Quay lại Trang chủ'),
@@ -41,7 +59,7 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: Text(room.title),
         leading: IconButton(
@@ -68,11 +86,11 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                       },
                     )
                   : Container(
-                      color: AppColors.surfaceContainerLow,
-                      child: const Icon(
+                      color: palette.surfaceLow,
+                      child: Icon(
                         Icons.home_outlined,
                         size: 72,
-                        color: AppColors.onSurfaceVariant,
+                        color: palette.onSurfaceVariant,
                       ),
                     ),
             ),
@@ -104,16 +122,18 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                       Text(
                         '${_formatCurrency(room.price)}đ/tháng',
                         style: AppTypography.titleMD.copyWith(
-                          color: AppColors.primary,
+                          color: palette.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.straighten_outlined, size: 16, color: AppColors.onSurfaceVariant),
+                      Icon(Icons.straighten_outlined,
+                          size: 16, color: palette.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         '${room.area.toStringAsFixed(0)} m²',
-                        style: AppTypography.titleSM.copyWith(color: AppColors.onSurfaceVariant),
+                        style: AppTypography.titleSM
+                            .copyWith(color: palette.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -122,13 +142,15 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
+                      Icon(Icons.location_on_outlined,
+                          color: palette.primary, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Địa chỉ phòng', style: AppTypography.titleSM),
+                            const Text('Địa chỉ phòng',
+                                style: AppTypography.titleSM),
                             const SizedBox(height: 2),
                             Text(room.address, style: AppTypography.bodyMD),
                           ],
@@ -142,7 +164,7 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                       height: 150,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: AppColors.outlineVariant),
+                        border: Border.all(color: palette.outlineVariant),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: GoogleMap(
@@ -169,26 +191,30 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                   const Text('Tiện nghi sẵn có', style: AppTypography.titleSM),
                   const SizedBox(height: AppSpacing.sm),
                   if (room.amenities.isEmpty)
-                    const Text('Chưa cấu hình tiện nghi', style: AppTypography.bodySM)
+                    const Text('Chưa cấu hình tiện nghi',
+                        style: AppTypography.bodySM)
                   else
                     Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.xs,
                       children: room.amenities.map((amenity) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
+                            color: palette.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check, size: 14, color: AppColors.primary),
+                              Icon(Icons.check,
+                                  size: 14, color: palette.primary),
                               const SizedBox(width: 4),
                               Text(
                                 amenity,
-                                style: AppTypography.labelSM.copyWith(color: AppColors.primary),
+                                style: AppTypography.labelSM
+                                    .copyWith(color: palette.primary),
                               ),
                             ],
                           ),
@@ -201,45 +227,54 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                   const Text('Mô tả chi tiết', style: AppTypography.titleSM),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    room.description.isNotEmpty ? room.description : 'Không có mô tả cho phòng trọ này.',
+                    room.description.isNotEmpty
+                        ? room.description
+                        : 'Không có mô tả cho phòng trọ này.',
                     style: AppTypography.bodyMD.copyWith(height: 1.5),
                   ),
-                  
+
                   // Video introduction (if exists)
-                  if (room.videoUrl != null && room.videoUrl!.isNotEmpty) ...[
+                  if (room.videoUrl != null &&
+                      room.videoUrl!.trim().isNotEmpty) ...[
                     const Divider(height: AppSpacing.xl),
-                    const Text('Video giới thiệu', style: AppTypography.titleSM),
-                    const SizedBox(height: AppSpacing.sm),
+                    RoomVideoPlayer(
+                      videoUrl: room.videoUrl!,
+                      subtitle:
+                          'Video này đang hiển thị cho người thuê khi xem chi tiết phòng',
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  if (lockedByRental) ...[
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLowest,
+                        color: palette.warningContainer,
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        boxShadow: const [AppShadows.card],
+                        border: Border.all(
+                          color: palette.warning.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.video_library_outlined, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          const Expanded(
+                          Icon(Icons.lock_outline, color: palette.warning),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
                             child: Text(
-                              'Đã tải lên video giới thiệu phòng trọ thành công.',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              'Phòng đang có đặt cọc hoặc người thuê, không thể gỡ bài đăng. Hãy xử lý/hủy hợp đồng trước khi gỡ phòng.',
+                              style: AppTypography.bodySM.copyWith(
+                                color: palette.warning,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Video link copy vào clipboard!')),
-                              );
-                            },
-                            child: const Text('Xem link'),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: AppSpacing.md),
                   ],
-                  const SizedBox(height: AppSpacing.xxl),
 
                   // ─── Landlord Action Buttons ────────────
                   Row(
@@ -249,8 +284,12 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                         child: AppButton(
                           text: 'Gỡ bài đăng',
                           type: AppButtonType.secondary,
-                          onPressed: () => _confirmDeleteRoom(context, ref),
-                          icon: Icons.delete_outline,
+                          onPressed: lockedByRental
+                              ? null
+                              : () => _confirmDeleteRoom(context, ref),
+                          icon: lockedByRental
+                              ? Icons.lock_outline
+                              : Icons.delete_outline,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -259,7 +298,9 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
                         child: AppButton(
                           text: 'Chỉnh sửa',
                           onPressed: () {
-                            ref.read(createRoomProvider.notifier).loadRoomForEdit(room);
+                            ref
+                                .read(createRoomProvider.notifier)
+                                .loadRoomForEdit(room);
                             context.go('/landlord/create-room/step1');
                           },
                           icon: Icons.edit_outlined,
@@ -294,15 +335,16 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
             TextButton(
               onPressed: () async {
                 Navigator.pop(dialogContext); // Đóng Dialog
-                
+
                 try {
                   final repo = ref.read(roomRepositoryProvider);
                   await repo.deleteRoom(roomId);
-                  
+
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Đã gỡ bài đăng phòng trọ thành công! 🎉'),
+                        content:
+                            Text('Đã gỡ bài đăng phòng trọ thành công! 🎉'),
                         backgroundColor: Color(0xFF2E7D32),
                       ),
                     );
@@ -321,7 +363,8 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
               },
               child: const Text(
                 'Đồng ý gỡ',
-                style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -332,8 +375,8 @@ class LandlordRoomDetailScreen extends ConsumerWidget {
 
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 }

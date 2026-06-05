@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/providers/room_provider.dart';
@@ -21,23 +22,25 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
     final user = ref.watch(currentUserProvider);
-    
+    final palette = context.palette;
+
     // Lọc danh sách phòng của riêng chủ trọ hiện tại
-    final landlordRooms = roomState.rooms.where((r) => r.landlordId == user?.id).toList();
-    
+    final landlordRooms =
+        roomState.rooms.where((r) => r.landlordId == user?.id).toList();
+
     // Lọc danh sách phòng theo trạng thái
-    final filteredRooms = _selectedFilter == null 
-        ? landlordRooms 
+    final filteredRooms = _selectedFilter == null
+        ? landlordRooms
         : landlordRooms.where((r) => r.status == _selectedFilter).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Quản lý Phòng trọ'),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+            icon: Icon(Icons.map_outlined, color: palette.primary),
             onPressed: () => context.push('/landlord/map'),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -47,21 +50,26 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
         children: [
           // Filter section
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            color: AppColors.surfaceContainerLowest,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            color: palette.surfaceLowest,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip(null, 'Tất cả (${landlordRooms.length})'),
-                  _buildFilterChip(RoomStatus.available, 'Còn trống (${landlordRooms.where((r) => r.status == RoomStatus.available).length})'),
-                  _buildFilterChip(RoomStatus.rented, 'Đã thuê (${landlordRooms.where((r) => r.status == RoomStatus.rented).length})'),
-                  _buildFilterChip(RoomStatus.overdue, 'Quá hạn (${landlordRooms.where((r) => r.status == RoomStatus.overdue).length})'),
+                  _buildFilterChip(
+                      context, null, 'Tất cả (${landlordRooms.length})'),
+                  _buildFilterChip(context, RoomStatus.available,
+                      'Còn trống (${landlordRooms.where((r) => r.status == RoomStatus.available).length})'),
+                  _buildFilterChip(context, RoomStatus.rented,
+                      'Đã thuê (${landlordRooms.where((r) => r.status == RoomStatus.rented).length})'),
+                  _buildFilterChip(context, RoomStatus.overdue,
+                      'Quá hạn (${landlordRooms.where((r) => r.status == RoomStatus.overdue).length})'),
                 ],
               ),
             ),
           ),
-          
+
           // Room list
           Expanded(
             child: filteredRooms.isEmpty
@@ -69,9 +77,11 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.meeting_room_outlined, size: 64, color: AppColors.outlineVariant),
+                        Icon(Icons.meeting_room_outlined,
+                            size: 64, color: AppColors.outlineVariant),
                         SizedBox(height: 16),
-                        Text('Không có phòng nào phù hợp', style: AppTypography.bodyMD),
+                        Text('Không có phòng nào phù hợp',
+                            style: AppTypography.bodyMD),
                       ],
                     ),
                   )
@@ -84,7 +94,8 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: RoomCard(
                           room: room,
-                          onTap: () => context.push('/landlord/rooms/detail/${room.id}'),
+                          onTap: () =>
+                              context.push('/landlord/rooms/detail/${room.id}'),
                         ),
                       );
                     },
@@ -95,7 +106,9 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
     );
   }
 
-  Widget _buildFilterChip(RoomStatus? status, String label) {
+  Widget _buildFilterChip(
+      BuildContext context, RoomStatus? status, String label) {
+    final palette = context.palette;
     final isSelected = _selectedFilter == status;
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
@@ -107,12 +120,12 @@ class _RoomListScreenState extends ConsumerState<RoomListScreen> {
             _selectedFilter = selected ? status : null;
           });
         },
-        selectedColor: AppColors.primaryContainer,
+        selectedColor: palette.primary,
         labelStyle: AppTypography.labelSM.copyWith(
-          color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+          color: isSelected ? palette.onPrimary : palette.onSurfaceVariant,
         ),
-        checkmarkColor: AppColors.onPrimary,
-        backgroundColor: AppColors.surfaceContainerLow,
+        checkmarkColor: palette.onPrimary,
+        backgroundColor: palette.surfaceLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.chip),
           side: const BorderSide(color: Colors.transparent),

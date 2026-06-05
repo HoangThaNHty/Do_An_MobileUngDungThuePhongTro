@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../models/entities/room.dart';
 import '../common/status_chips.dart';
@@ -19,11 +20,12 @@ class RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
+          color: palette.surfaceLowest,
           borderRadius: BorderRadius.circular(AppRadius.card),
           boxShadow: const [AppShadows.card],
         ),
@@ -41,10 +43,10 @@ class RoomCard extends StatelessWidget {
                         width: 84,
                         height: 84,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => _imagePlaceholder(),
-                        errorWidget: (_, __, ___) => _imagePlaceholder(),
+                        placeholder: (_, __) => _imagePlaceholder(palette),
+                        errorWidget: (_, __, ___) => _imagePlaceholder(palette),
                       )
-                    : _imagePlaceholder(),
+                    : _imagePlaceholder(palette),
               ),
               const SizedBox(width: AppSpacing.md),
               // Content
@@ -59,7 +61,9 @@ class RoomCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             room.title,
-                            style: AppTypography.titleSM,
+                            style: AppTypography.titleSM.copyWith(
+                              color: palette.onSurface,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -72,16 +76,18 @@ class RoomCard extends StatelessWidget {
                     // Address
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
                           size: 13,
-                          color: AppColors.onSurfaceVariant,
+                          color: palette.onSurfaceVariant,
                         ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             room.address,
-                            style: AppTypography.bodySM,
+                            style: AppTypography.bodySM.copyWith(
+                              color: palette.onSurfaceVariant,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -92,15 +98,17 @@ class RoomCard extends StatelessWidget {
                     // Area
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.straighten_outlined,
                           size: 13,
-                          color: AppColors.onSurfaceVariant,
+                          color: palette.onSurfaceVariant,
                         ),
                         const SizedBox(width: 3),
                         Text(
                           '${room.area.toStringAsFixed(0)} m²',
-                          style: AppTypography.bodySM,
+                          style: AppTypography.bodySM.copyWith(
+                            color: palette.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -109,7 +117,7 @@ class RoomCard extends StatelessWidget {
                     Text(
                       '${room.price.toVnd()}đ/tháng',
                       style: AppTypography.titleSM.copyWith(
-                        color: AppColors.primary,
+                        color: palette.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -123,14 +131,14 @@ class RoomCard extends StatelessWidget {
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _imagePlaceholder(AppPalette palette) {
     return Container(
       width: 84,
       height: 84,
-      color: AppColors.surfaceContainerLow,
-      child: const Icon(
+      color: palette.surfaceLow,
+      child: Icon(
         Icons.home_outlined,
-        color: AppColors.onSurfaceVariant,
+        color: palette.onSurfaceVariant,
         size: 32,
       ),
     );
@@ -154,11 +162,12 @@ class LandlordRoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
+          color: palette.surfaceLowest,
           borderRadius: BorderRadius.circular(AppRadius.card),
           boxShadow: const [AppShadows.card],
         ),
@@ -177,22 +186,22 @@ class LandlordRoomCard extends StatelessWidget {
                           imageUrl: room.images.first,
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(
-                            color: AppColors.surfaceContainerLow,
+                            color: palette.surfaceLow,
                           ),
                           errorWidget: (_, __, ___) => Container(
-                            color: AppColors.surfaceContainerLow,
-                            child: const Icon(
+                            color: palette.surfaceLow,
+                            child: Icon(
                               Icons.home_outlined,
-                              color: AppColors.onSurfaceVariant,
+                              color: palette.onSurfaceVariant,
                               size: 48,
                             ),
                           ),
                         )
                       : Container(
-                          color: AppColors.surfaceContainerLow,
-                          child: const Icon(
+                          color: palette.surfaceLow,
+                          child: Icon(
                             Icons.home_outlined,
-                            color: AppColors.onSurfaceVariant,
+                            color: palette.onSurfaceVariant,
                             size: 48,
                           ),
                         ),
@@ -207,13 +216,16 @@ class LandlordRoomCard extends StatelessWidget {
             ),
             // Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: AppSpacing.sm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     room.title,
-                    style: AppTypography.titleSM,
+                    style: AppTypography.titleSM.copyWith(
+                      color: palette.onSurface,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -221,7 +233,7 @@ class LandlordRoomCard extends StatelessWidget {
                   Text(
                     '${room.price.toVnd()}đ/tháng',
                     style: AppTypography.bodyMD.copyWith(
-                      color: AppColors.primary,
+                      color: palette.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -229,15 +241,18 @@ class LandlordRoomCard extends StatelessWidget {
                   // Views + Toggle
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.visibility_outlined,
                         size: 14,
-                        color: AppColors.onSurfaceVariant,
+                        color: palette.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${room.viewCount} lượt xem',
-                        style: AppTypography.bodySM.copyWith(fontSize: 11),
+                        style: AppTypography.bodySM.copyWith(
+                          color: palette.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
                       ),
                       const Spacer(),
                       // Status toggle
@@ -246,7 +261,8 @@ class LandlordRoomCard extends StatelessWidget {
                         child: Switch(
                           value: room.status == RoomStatus.rented,
                           onChanged: (_) => onStatusToggle?.call(),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                     ],

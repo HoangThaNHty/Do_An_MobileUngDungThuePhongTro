@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/chat_controller.dart';
@@ -38,7 +39,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final user = ref.read(currentUserProvider);
       if (user != null) {
         final isLandlord = user.role == UserRole.landlord;
-        ref.read(chatControllerProvider).markAsRead(widget.chatId, user.id, isLandlord);
+        ref
+            .read(chatControllerProvider)
+            .markAsRead(widget.chatId, user.id, isLandlord);
       }
     });
   }
@@ -82,10 +85,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final messagesAsync = ref.watch(chatMessagesProvider(widget.chatId));
     final chatRoomAsync = ref.watch(myChatsProvider);
+    final palette = context.palette;
 
     return chatRoomAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => Scaffold(
+        backgroundColor: palette.surface,
+        body: Center(child: CircularProgressIndicator(color: palette.primary)),
       ),
       error: (e, _) => Scaffold(
         body: Center(child: Text('Lỗi: $e')),
@@ -95,15 +100,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (!hasAccess) {
           return Scaffold(
             appBar: AppBar(title: const Text('Bảo mật')),
-            body: const Center(
+            body: Center(
               child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock_outline, size: 64, color: AppColors.error),
-                    SizedBox(height: 16),
-                    Text(
+                    Icon(Icons.lock_outline, size: 64, color: palette.danger),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Bạn không có quyền truy cập cuộc trò chuyện này!',
                       style: AppTypography.titleSM,
                       textAlign: TextAlign.center,
@@ -118,7 +123,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final room = rooms.firstWhere((r) => r.id == widget.chatId);
         final isLandlord = currentUser?.role == UserRole.landlord;
         final partnerName = isLandlord ? room.tenantName : room.landlordName;
-        final partnerAvatar = isLandlord ? room.tenantAvatar : room.landlordAvatar;
+        final partnerAvatar =
+            isLandlord ? room.tenantAvatar : room.landlordAvatar;
 
         // Tự động đánh dấu đã đọc khi nhận tin nhắn mới trong lúc đang xem màn hình
         ref.listen(chatMessagesProvider(widget.chatId), (prev, next) {
@@ -127,22 +133,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         });
 
         return Scaffold(
-          backgroundColor: AppColors.surface,
+          backgroundColor: palette.surface,
           appBar: AppBar(
             titleSpacing: 0,
             title: Row(
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                  backgroundImage: partnerAvatar != null && partnerAvatar.isNotEmpty
-                      ? NetworkImage(partnerAvatar)
-                      : null,
+                  backgroundColor: palette.primary.withValues(alpha: 0.12),
+                  backgroundImage:
+                      partnerAvatar != null && partnerAvatar.isNotEmpty
+                          ? NetworkImage(partnerAvatar)
+                          : null,
                   child: partnerAvatar == null || partnerAvatar.isEmpty
                       ? Text(
-                          partnerName.isNotEmpty ? partnerName[0].toUpperCase() : 'U',
+                          partnerName.isNotEmpty
+                              ? partnerName[0].toUpperCase()
+                              : 'U',
                           style: AppTypography.titleSM.copyWith(
-                            color: AppColors.primary,
+                            color: palette.primary,
                             fontSize: 14,
                           ),
                         )
@@ -169,8 +178,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // Messages list
               Expanded(
                 child: messagesAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(color: palette.primary),
                   ),
                   error: (err, _) => Center(
                     child: Text('Lỗi tải tin nhắn: $err'),
@@ -181,14 +190,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         child: Text(
                           'Bắt đầu nhắn tin ngay...',
                           style: AppTypography.bodySM.copyWith(
-                            color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                            color:
+                                palette.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                         ),
                       );
                     }
 
                     // Scroll to bottom on load
-                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                    WidgetsBinding.instance
+                        .addPostFrameCallback((_) => _scrollToBottom());
 
                     return ListView.builder(
                       controller: _scrollController,
@@ -199,41 +210,52 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         final isMe = msg.senderId == currentUser?.id;
 
                         return Align(
-                          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                          alignment: isMe
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            margin:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
                               vertical: AppSpacing.sm,
                             ),
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.75,
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.75,
                             ),
                             decoration: BoxDecoration(
-                              color: isMe
-                                  ? AppColors.primary
-                                  : AppColors.surfaceContainerLow,
+                              color:
+                                  isMe ? palette.primary : palette.surfaceLow,
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(16),
                                 topRight: const Radius.circular(16),
-                                bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-                                bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+                                bottomLeft: isMe
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                bottomRight: isMe
+                                    ? Radius.zero
+                                    : const Radius.circular(16),
                               ),
-                              boxShadow: const [
+                              boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black12,
+                                  color: palette.shadow,
                                   blurRadius: 4,
-                                  offset: Offset(0, 2),
+                                  offset: const Offset(0, 2),
                                 )
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   msg.text,
                                   style: AppTypography.bodyMD.copyWith(
-                                    color: isMe ? Colors.white : AppColors.onSurface,
+                                    color: isMe
+                                        ? palette.onPrimary
+                                        : palette.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -243,7 +265,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     _formatMessageTime(msg.timestamp),
                                     style: TextStyle(
                                       fontSize: 8,
-                                      color: isMe ? Colors.white60 : AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+                                      color: isMe
+                                          ? palette.onPrimary
+                                              .withValues(alpha: 0.72)
+                                          : palette.onSurfaceVariant
+                                              .withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ),
@@ -256,7 +282,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   },
                 ),
               ),
-              
+
               // Input bar
               SafeArea(
                 child: Container(
@@ -264,19 +290,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,
                   ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
-                    boxShadow: [AppShadows.bottomSheet],
+                  decoration: BoxDecoration(
+                    color: palette.surfaceLowest,
+                    boxShadow: const [AppShadows.bottomSheet],
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerLow,
+                            color: palette.surfaceLow,
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md),
                           child: TextField(
                             controller: _messageCtrl,
                             maxLines: null,
@@ -285,7 +312,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               hintText: 'Nhập tin nhắn...',
                               border: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 10),
+                              contentPadding:
+                                  EdgeInsets.symmetric(vertical: 10),
                             ),
                             style: AppTypography.bodyMD,
                           ),
@@ -294,7 +322,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       const SizedBox(width: AppSpacing.xs),
                       IconButton(
                         icon: const Icon(Icons.send),
-                        color: AppColors.primary,
+                        color: palette.primary,
                         onPressed: _sendMessage,
                       ),
                     ],

@@ -1,5 +1,19 @@
 ﻿{
   "users": {
+    "Sb8yLxqUcndBwwf1ppIUhIYIw1t1": {
+      "id": "Sb8yLxqUcndBwwf1ppIUhIYIw1t1",
+      "fullName": "Admin Hệ Thống",
+      "email": "admin.demo@email.com",
+      "phone": "0987654321",
+      "role": "admin",
+      "avatarUrl": "https://i.pravatar.cc/150?img=12",
+      "createdAt": "2026-05-01T07:30:00.000Z",
+      "gender": "Khác",
+      "birthYear": 1995,
+      "hometown": "TP.HCM",
+      "occupation": "Quản trị hệ thống",
+      "bio": "Tài khoản admin demo chỉ dùng để giám sát tổng quan dữ liệu hệ thống."
+    },
     "4ecfMAn6eWOspRzdnp0QvIwIxqr2": {
       "id": "4ecfMAn6eWOspRzdnp0QvIwIxqr2",
       "fullName": "Nguyễn Văn An",

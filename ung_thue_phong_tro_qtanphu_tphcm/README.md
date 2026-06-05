@@ -51,6 +51,32 @@
 
 ---
 
+## ✅ Cập Nhật Demo & Tester - 05/06/2026
+
+Phiên bản mới nhất đã được chỉnh lại để nhóm demo theo luồng thực tế, tránh dữ liệu test bị lẫn hoặc màn hình trắng khi nghiệm thu.
+
+### Luồng thanh toán hóa đơn đã hoàn chỉnh
+1. Chủ trọ chỉ tạo hóa đơn được cho **phòng có hợp đồng đang thuê thật sự**. Phòng chỉ bị gạt trạng thái thủ công sang "Đã thuê" sẽ không xuất hiện trong màn tạo hóa đơn.
+2. Mỗi người thuê chỉ có **1 hóa đơn tháng hiện tại cho mỗi phòng**. Nếu nhập sai, chủ trọ vào **Người thuê -> Lịch sử hóa đơn** để xóa hóa đơn khi khách chưa thanh toán.
+3. Khi chủ trọ tạo hóa đơn tháng, người thuê sẽ thấy thông báo ngay trên trang **Khám phá** và trong tab **Đặt phòng**:
+   - "Có hóa đơn mới cần thanh toán" nếu chưa chuyển khoản.
+   - "Đang chờ chủ trọ duyệt thanh toán" nếu khách đã báo chuyển khoản.
+4. Người thuê bấm **Thanh toán qua VietQR**, quét QR, rồi bấm **Tôi đã chuyển khoản thành công**. Hóa đơn chuyển sang trạng thái chờ duyệt.
+5. Chủ trọ nhận banner **Có thanh toán cần xác nhận** ở Dashboard và cả màn **Quản lý người thuê**. Bấm **Duyệt** để mở danh sách hóa đơn chờ duyệt trực tiếp, không còn bị màn hình trắng.
+6. Chủ trọ có thể duyệt hoặc từ chối giao dịch. Khi duyệt, hóa đơn chuyển sang **Đã thanh toán** realtime cho cả hai phía.
+
+### Những lỗi đã khóa để tránh demo sai
+- Không cho gỡ/xóa bài đăng phòng đang có hợp đồng thuê hoặc đang cọc giữ chỗ.
+- Không cho đổi phòng đang thuê thật về trạng thái còn trống bằng thao tác gạt thủ công.
+- Lịch sử hóa đơn chủ trọ lấy từ nguồn tổng hợp realtime, không phụ thuộc cache cũ nên không còn trắng khi có hóa đơn chờ duyệt.
+- Màn hóa đơn của người thuê lọc theo đúng phòng đang xem, tránh lẫn hóa đơn giữa nhiều phòng.
+- QR VietQR dùng nền sáng cố định để đảm bảo app ngân hàng quét được dù app đang ở chế độ tối.
+
+### Lưu ý khi test trên điện thoại thật
+- Sau khi pull code mới, nên chạy lại bằng `flutter run` hoặc cài lại APK debug. Không chỉ hot reload nếu có thay đổi provider/Firebase.
+- Nếu dữ liệu demo bị rối do test nhiều lần, chạy lại script `./test/auto_auth_seeder.ps1` để reset về bộ dữ liệu chuẩn demo.
+- Không commit file `.env`, APK build, hoặc tài liệu Word cá nhân vào repo.
+
 ## 📁 Cấu Trúc Project
 
 ```
@@ -150,9 +176,10 @@ Trước khi chạy ứng dụng lần đầu, hãy mở **PowerShell** tại th
 ```
 
 * **Danh sách tài khoản demo sau khi đồng bộ:**
-  1. **Chủ trọ Nguyễn Văn An:** `chutro.demo@email.com` / `123456` (Sở hữu 6 phòng trọ đang trống, dữ liệu phù hợp để thuyết trình).
-  2. **Người thuê mới Trần Minh Khang:** `khang.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
-  3. **Người thuê mới Lê Ngọc Mai:** `mai.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
+  1. **Admin hệ thống:** `admin.demo@email.com` / `123456` (Giám sát tổng quan tài khoản, phòng, hợp đồng và hóa đơn).
+  2. **Chủ trọ Nguyễn Văn An:** `chutro.demo@email.com` / `123456` (Sở hữu 6 phòng trọ đang trống, dữ liệu phù hợp để thuyết trình).
+  3. **Người thuê mới Trần Minh Khang:** `khang.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
+  4. **Người thuê mới Lê Ngọc Mai:** `mai.demo@email.com` / `123456` (Chưa thuê phòng, chưa đặt cọc, chưa có hóa đơn/chat).
 
 ### 2. Thiết lập cấu hình API Keys (.env)
 Tạo file `.env` tại thư mục gốc của dự án `ung_thue_phong_tro_qtanphu_tphcm/` và điền cấu hình API của dự án:
@@ -181,4 +208,5 @@ FIREBASE_API_KEY=your_firebase_api_key_here
 |-----------|-------|------------|
 | `main` | Phiên bản gốc của nhóm | Ổn định |
 | `feature/premium-upgrades-and-privacy` | **Phiên bản mới nhất nâng cấp Premium, VietQR Payment & Cách ly chống rò rỉ dữ liệu** | **Hoàn thành - Sẵn sàng nghiệm thu** |
+| `feature/demo-ready-clean-data` | Nhánh song song chứa cùng bộ sửa demo, dùng khi cần reset/test dữ liệu sạch nhanh | Sẵn sàng test |
 | `feature/admin-management` | Tính năng Admin đang phát triển | Đang phát triển |

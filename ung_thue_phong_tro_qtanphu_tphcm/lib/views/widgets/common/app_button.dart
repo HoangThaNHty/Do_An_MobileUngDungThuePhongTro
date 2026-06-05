@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 
 // ═══════════════════════════════════════════
@@ -28,10 +29,10 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final btnHeight = height ?? AppSpacing.buttonHeight;
-    final minSize = fullWidth
-        ? Size(double.infinity, btnHeight)
-        : Size(0, btnHeight);
+    final minSize =
+        fullWidth ? Size(double.infinity, btnHeight) : Size(0, btnHeight);
 
     final content = isLoading
         ? SizedBox(
@@ -41,8 +42,8 @@ class AppButton extends StatelessWidget {
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(
                 type == AppButtonType.primary
-                    ? AppColors.onPrimary
-                    : AppColors.primary,
+                    ? palette.onPrimary
+                    : palette.primary,
               ),
             ),
           )
@@ -64,7 +65,11 @@ class AppButton extends StatelessWidget {
           width: fullWidth ? double.infinity : null,
           height: btnHeight,
           decoration: BoxDecoration(
-            gradient: AppGradients.primaryButton,
+            gradient: LinearGradient(
+              colors: [palette.primary, palette.primaryContainer],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
             borderRadius: BorderRadius.circular(AppRadius.button),
           ),
           child: Material(
@@ -75,7 +80,9 @@ class AppButton extends StatelessWidget {
               child: Container(
                 alignment: Alignment.center,
                 child: DefaultTextStyle(
-                  style: AppTypography.button,
+                  style: AppTypography.button.copyWith(
+                    color: palette.onPrimary,
+                  ),
                   child: content,
                 ),
               ),
@@ -90,8 +97,8 @@ class AppButton extends StatelessWidget {
           child: OutlinedButton(
             onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
-              backgroundColor: AppColors.surfaceContainerHigh,
-              foregroundColor: AppColors.primary,
+              backgroundColor: palette.surfaceHigh,
+              foregroundColor: palette.primary,
               minimumSize: minSize,
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
@@ -111,7 +118,7 @@ class AppButton extends StatelessWidget {
         return TextButton(
           onPressed: isLoading ? null : onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
+            foregroundColor: palette.primary,
             minimumSize: minSize,
             textStyle: const TextStyle(
               fontFamily: AppTypography.fontFamily,

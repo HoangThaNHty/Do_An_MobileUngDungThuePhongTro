@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:path/path.dart' as p;
+import '../../../../config/app_palette.dart';
 import '../../../../config/constants.dart';
 import '../../../../controllers/providers/create_room_provider.dart';
 import '../../../widgets/common/app_button.dart';
@@ -17,6 +18,7 @@ class Step3Screen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(createRoomProvider);
     final notifier = ref.read(createRoomProvider.notifier);
+    final palette = context.palette;
 
     // Kiểm tra ảnh xem trước đầu tiên
     final hasImage = state.images.isNotEmpty || state.existingImages.isNotEmpty;
@@ -26,7 +28,7 @@ class Step3Screen extends ConsumerWidget {
     final isNetworkImage = firstImagePath.startsWith('http');
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: Text(state.isEditing ? 'Chỉnh sửa phòng' : 'Thêm phòng'),
         leading: IconButton(
@@ -36,18 +38,19 @@ class Step3Screen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          _buildProgress(3),
+          _buildProgress(context, 3),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                const Text('Bước 3: Xem trước & Xác nhận', style: AppTypography.titleMD),
+                const Text('Bước 3: Xem trước & Xác nhận',
+                    style: AppTypography.titleMD),
                 const SizedBox(height: AppSpacing.md),
 
                 // ─── THẺ XEM TRƯỚC PHÒNG (PREVIEW CARD) ──────────────────
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
+                    color: palette.surfaceLowest,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: const [AppShadows.card],
                   ),
@@ -64,10 +67,12 @@ class Step3Screen extends ConsumerWidget {
                                 ? CachedNetworkImage(
                                     imageUrl: firstImagePath,
                                     fit: BoxFit.cover,
-                                    placeholder: (_, __) => Container(color: AppColors.surfaceContainerLow),
+                                    placeholder: (_, __) =>
+                                        Container(color: palette.surfaceLow),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: AppColors.surfaceContainerLow,
-                                      child: const Icon(Icons.home_outlined, size: 64),
+                                      color: palette.surfaceLow,
+                                      child: const Icon(Icons.home_outlined,
+                                          size: 64),
                                     ),
                                   )
                                 : Image.file(
@@ -75,15 +80,16 @@ class Step3Screen extends ConsumerWidget {
                                     fit: BoxFit.cover,
                                   ))
                             : Container(
-                                color: AppColors.surfaceContainerLow,
-                                child: const Center(
+                                color: palette.surfaceLow,
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.add_photo_alternate_outlined,
-                                          size: 48, color: AppColors.onSurfaceVariant),
-                                      SizedBox(height: 8),
-                                      Text('Chưa có ảnh'),
+                                          size: 48,
+                                          color: palette.onSurfaceVariant),
+                                      const SizedBox(height: 8),
+                                      const Text('Chưa có ảnh'),
                                     ],
                                   ),
                                 ),
@@ -98,25 +104,29 @@ class Step3Screen extends ConsumerWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    state.title.isEmpty ? 'Tên phòng chưa điền' : state.title,
+                                    state.title.isEmpty
+                                        ? 'Tên phòng chưa điền'
+                                        : state.title,
                                     style: AppTypography.titleMD,
                                   ),
                                 ),
-                                const RoomStatusChip(status: RoomStatus.available),
+                                const RoomStatusChip(
+                                    status: RoomStatus.available),
                               ],
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
                               '${_formatCurrency(state.price)}đ/tháng',
                               style: AppTypography.titleMD.copyWith(
-                                color: AppColors.primary,
+                                color: palette.primary,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xs),
                             Row(
                               children: [
-                                const Icon(Icons.location_on_outlined, size: 14, color: AppColors.onSurfaceVariant),
+                                Icon(Icons.location_on_outlined,
+                                    size: 14, color: palette.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
@@ -132,14 +142,16 @@ class Step3Screen extends ConsumerWidget {
                             const SizedBox(height: AppSpacing.xs),
                             Row(
                               children: [
-                                const Icon(Icons.straighten_outlined, size: 14, color: AppColors.onSurfaceVariant),
+                                Icon(Icons.straighten_outlined,
+                                    size: 14, color: palette.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${state.area.toStringAsFixed(0)} m²',
                                   style: AppTypography.bodyMD,
                                 ),
                                 const SizedBox(width: AppSpacing.md),
-                                const Icon(Icons.payments_outlined, size: 14, color: AppColors.onSurfaceVariant),
+                                Icon(Icons.payments_outlined,
+                                    size: 14, color: palette.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Đặt cọc ${state.depositMonths} tháng',
@@ -156,23 +168,28 @@ class Step3Screen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
 
                 // ─── TÓM TẮT THÔNG TIN (INFO SUMMARY) ──────────────────────
-                _summarySection('Thông tin phòng', [
-                  _infoRow('Tên phòng', state.title),
-                  _infoRow('Quận/Huyện', state.district),
-                  _infoRow('Địa chỉ', state.address),
-                  _infoRow('Diện tích', '${state.area.toStringAsFixed(0)} m²'),
-                  _infoRow('Giá thuê', '${_formatCurrency(state.price)}đ/tháng'),
-                  _infoRow('Đặt cọc', '${state.depositMonths} tháng'),
+                _summarySection(context, 'Thông tin phòng', [
+                  _infoRow(context, 'Tên phòng', state.title),
+                  _infoRow(context, 'Quận/Huyện', state.district),
+                  _infoRow(context, 'Địa chỉ', state.address),
+                  _infoRow(context, 'Diện tích',
+                      '${state.area.toStringAsFixed(0)} m²'),
+                  _infoRow(context, 'Giá thuê',
+                      '${_formatCurrency(state.price)}đ/tháng'),
+                  _infoRow(context, 'Đặt cọc', '${state.depositMonths} tháng'),
                   if (state.videoPath != null)
-                    _infoRow('Video giới thiệu mới', p.basename(state.videoPath!))
+                    _infoRow(context, 'Video giới thiệu mới',
+                        p.basename(state.videoPath!))
                   else if (state.existingVideoUrl != null)
-                    _infoRow('Video giới thiệu', 'Đang sử dụng video đã lưu'),
+                    _infoRow(context, 'Video giới thiệu',
+                        'Đang sử dụng video đã lưu'),
                 ]),
                 const SizedBox(height: AppSpacing.md),
 
                 // Tiện nghi
                 if (state.amenities.isNotEmpty)
-                  _summarySection('Tiện nghi (${state.amenities.length})', [
+                  _summarySection(
+                      context, 'Tiện nghi (${state.amenities.length})', [
                     Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.xs),
                       child: Wrap(
@@ -180,15 +197,18 @@ class Step3Screen extends ConsumerWidget {
                         runSpacing: AppSpacing.xs,
                         children: state.amenities
                             .map((a) => Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(AppRadius.chip),
+                                    color:
+                                        palette.primary.withValues(alpha: 0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.chip),
                                   ),
                                   child: Text(
                                     a,
                                     style: AppTypography.bodySM.copyWith(
-                                      color: AppColors.primary,
+                                      color: palette.primary,
                                     ),
                                   ),
                                 ))
@@ -200,10 +220,11 @@ class Step3Screen extends ConsumerWidget {
 
                 // Mô tả
                 if (state.description.isNotEmpty)
-                  _summarySection('Mô tả', [
+                  _summarySection(context, 'Mô tả', [
                     Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.xs),
-                      child: Text(state.description, style: AppTypography.bodyMD),
+                      child:
+                          Text(state.description, style: AppTypography.bodyMD),
                     ),
                   ]),
                 const SizedBox(height: AppSpacing.lg),
@@ -213,23 +234,27 @@ class Step3Screen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.errorContainer,
+                      color: palette.dangerContainer,
                       borderRadius: BorderRadius.circular(AppRadius.button),
                     ),
                     child: Text(
                       state.error!,
-                      style: AppTypography.bodyMD.copyWith(color: AppColors.onErrorContainer),
+                      style:
+                          AppTypography.bodyMD.copyWith(color: palette.danger),
                     ),
                   ),
-                if (state.error != null)
-                  const SizedBox(height: AppSpacing.md),
+                if (state.error != null) const SizedBox(height: AppSpacing.md),
 
                 // NÚT ĐĂNG PHÒNG & CHỈNH SỬA
                 AppButton(
                   text: state.isEditing ? 'Lưu thay đổi' : 'Đăng phòng trọ',
-                  onPressed: state.isSubmitting ? null : () => _submit(context, ref, notifier, state.isEditing),
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => _submit(context, ref, notifier, state.isEditing),
                   isLoading: state.isSubmitting,
-                  icon: state.isEditing ? Icons.save_outlined : Icons.publish_outlined,
+                  icon: state.isEditing
+                      ? Icons.save_outlined
+                      : Icons.publish_outlined,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 AppButton(
@@ -246,13 +271,16 @@ class Step3Screen extends ConsumerWidget {
     );
   }
 
-  Future<void> _submit(BuildContext context, WidgetRef ref, CreateRoomNotifier notifier, bool isEditing) async {
+  Future<void> _submit(BuildContext context, WidgetRef ref,
+      CreateRoomNotifier notifier, bool isEditing) async {
     final success = await notifier.submit();
     if (success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isEditing ? 'Cập nhật phòng trọ thành công! 🎉' : 'Đăng phòng trọ thành công! 🎉'),
-          backgroundColor: const Color(0xFF2E7D32),
+          content: Text(isEditing
+              ? 'Cập nhật phòng trọ thành công! 🎉'
+              : 'Đăng phòng trọ thành công! 🎉'),
+          backgroundColor: context.palette.success,
         ),
       );
       notifier.reset();
@@ -260,19 +288,22 @@ class Step3Screen extends ConsumerWidget {
     }
   }
 
-  Widget _summarySection(String title, List<Widget> children) {
+  Widget _summarySection(
+      BuildContext context, String title, List<Widget> children) {
+    final palette = context.palette;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: palette.surfaceLowest,
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: const [AppShadows.card],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.labelSM.copyWith(color: AppColors.primary)),
+          Text(title,
+              style: AppTypography.labelSM.copyWith(color: palette.primary)),
           const SizedBox(height: AppSpacing.sm),
           ...children,
         ],
@@ -280,7 +311,8 @@ class Step3Screen extends ConsumerWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(BuildContext context, String label, String value) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -294,7 +326,7 @@ class Step3Screen extends ConsumerWidget {
             child: Text(
               value.isEmpty ? '–' : value,
               style: AppTypography.bodyMD.copyWith(
-                color: AppColors.onSurface,
+                color: palette.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -304,10 +336,12 @@ class Step3Screen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgress(int step) {
+  Widget _buildProgress(BuildContext context, int step) {
+    final palette = context.palette;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      color: AppColors.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      color: palette.surfaceLow,
       child: Row(
         children: List.generate(3, (i) {
           final s = i + 1;
@@ -321,16 +355,20 @@ class Step3Screen extends ConsumerWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: isActive || isDone ? AppColors.primary : AppColors.surfaceContainerHigh,
+                    color: isActive || isDone
+                        ? palette.primary
+                        : palette.surfaceHigh,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: isDone
-                        ? const Icon(Icons.check, size: 14, color: AppColors.onPrimary)
+                        ? Icon(Icons.check, size: 14, color: palette.onPrimary)
                         : Text(
                             '$s',
                             style: AppTypography.labelSM.copyWith(
-                              color: isActive ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                              color: isActive
+                                  ? palette.onPrimary
+                                  : palette.onSurfaceVariant,
                             ),
                           ),
                   ),
@@ -339,7 +377,7 @@ class Step3Screen extends ConsumerWidget {
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: isDone ? AppColors.primary : AppColors.surfaceContainerHigh,
+                      color: isDone ? palette.primary : palette.surfaceHigh,
                     ),
                   ),
               ],
@@ -352,8 +390,8 @@ class Step3Screen extends ConsumerWidget {
 
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 }

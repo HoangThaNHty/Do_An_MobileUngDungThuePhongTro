@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/booking_controller.dart';
+import '../../../controllers/providers/bill_provider.dart';
 import '../../widgets/common/status_chips.dart';
 import '../../widgets/common/app_button.dart';
 import '../../../models/entities/bill.dart';
+import '../../../models/entities/rental.dart';
 import '../../../models/entities/user.dart';
 
-final landlordByRoomProvider = FutureProvider.family<AppUser?, String>((ref, roomId) async {
+final landlordByRoomProvider =
+    FutureProvider.family<AppUser?, String>((ref, roomId) async {
   final db = FirebaseDatabase.instance;
   final roomSnapshot = await db.ref('rooms/$roomId').get();
   if (!roomSnapshot.exists) return null;
   final roomData = roomSnapshot.value as Map<dynamic, dynamic>;
   final landlordId = roomData['landlordId'] as String?;
   if (landlordId == null) return null;
-  
+
   final userSnapshot = await db.ref('users/$landlordId').get();
   if (!userSnapshot.exists) return null;
   final userData = userSnapshot.value as Map<dynamic, dynamic>;
@@ -39,9 +44,11 @@ class MyBillsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Lấy hóa đơn từ Firebase Realtime Database
     final billsAsync = ref.watch(tenantBillsProvider);
+    final rentalsAsync = ref.watch(tenantRentalsProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Hóa đơn'),
         leading: IconButton(
@@ -50,21 +57,43 @@ class MyBillsScreen extends ConsumerWidget {
         ),
       ),
       body: billsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (bills) {
-          if (bills.isEmpty) {
+          Rental? currentRental;
+          for (final rental in rentalsAsync.valueOrNull ?? const <Rental>[]) {
+            if (rental.id == rentalId) {
+              currentRental = rental;
+              break;
+            }
+          }
+
+          final rentalContext = currentRental;
+          final displayBills = rentalContext == null
+              ? List<Bill>.from(bills)
+              : bills
+                  .where((bill) => billBelongsToHistory(
+                        bill,
+                        BillHistoryQuery(
+                          roomId: rentalContext.roomId,
+                          tenantId: rentalContext.tenantId,
+                          roomTitle: rentalContext.roomTitle,
+                        ),
+                      ))
+                  .toList();
+          displayBills.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+          if (displayBills.isEmpty) {
             return const Center(child: Text('Chưa có hóa đơn'));
           }
           return ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: bills.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: AppSpacing.md),
+            itemCount: displayBills.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
             itemBuilder: (context, index) {
-              return _BillCard(bill: bills[index]);
+              return _BillCard(bill: displayBills[index]);
             },
           );
         },
@@ -80,9 +109,10 @@ class _BillCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: palette.surfaceLowest,
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: const [AppShadows.card],
       ),
@@ -94,9 +124,9 @@ class _BillCard extends ConsumerWidget {
               horizontal: AppSpacing.md,
               vertical: AppSpacing.md,
             ),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: BorderRadius.vertical(
+            decoration: BoxDecoration(
+              color: palette.surfaceLow,
+              borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppRadius.card),
               ),
             ),
@@ -106,23 +136,31 @@ class _BillCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(bill.roomTitle, style: AppTypography.titleSM),
+                      Text(
+                        bill.roomTitle,
+                        style: AppTypography.titleSM.copyWith(
+                          color: palette.onSurface,
+                        ),
+                      ),
                       Text(
                         'Tháng ${bill.billingMonth.month}/${bill.billingMonth.year}',
-                        style: AppTypography.bodySM.copyWith(fontWeight: FontWeight.bold),
+                        style: AppTypography.bodySM.copyWith(
+                          color: palette.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '📅 Ngày tạo: ${_fmtDateTime(bill.createdAt)}',
                         style: AppTypography.labelSM.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: palette.onSurfaceVariant,
                           fontSize: 10,
                         ),
                       ),
                     ],
                   ),
                 ),
-                _buildStatusWidget(),
+                _buildStatusWidget(palette),
               ],
             ),
           ),
@@ -131,19 +169,17 @@ class _BillCard extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               children: [
-                _billRow('Tiền thuê', bill.rentAmount),
+                _billRow('Tiền thuê', bill.rentAmount, palette),
+                _billRow('Điện (${bill.electricityUsage} kWh)',
+                    bill.electricityAmount, palette),
                 _billRow(
-                    'Điện (${bill.electricityUsage} kWh)',
-                    bill.electricityAmount),
-                _billRow(
-                    'Nước (${bill.waterUsage} m³)', bill.waterAmount),
-                _billRow('Internet', bill.internetAmount),
-                _billRow('Rác', bill.trashAmount),
+                    'Nước (${bill.waterUsage} m³)', bill.waterAmount, palette),
+                _billRow('Internet', bill.internetAmount, palette),
+                _billRow('Rác', bill.trashAmount, palette),
                 if (bill.otherAmount > 0)
-                  _billRow('Khác', bill.otherAmount),
+                  _billRow('Khác', bill.otherAmount, palette),
                 const SizedBox(height: AppSpacing.sm),
-                const Divider(
-                    color: AppColors.outlineVariant, thickness: 0.5),
+                Divider(color: palette.outlineVariant, thickness: 0.5),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -151,14 +187,14 @@ class _BillCard extends ConsumerWidget {
                     Text(
                       'TỔNG CỘNG',
                       style: AppTypography.labelSM.copyWith(
-                        color: AppColors.onSurface,
+                        color: palette.onSurface,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       '${_formatCurrency(bill.totalAmount)}đ',
                       style: AppTypography.titleMD.copyWith(
-                        color: AppColors.primary,
+                        color: palette.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -173,10 +209,9 @@ class _BillCard extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: bill.status == BillStatus.overdue
-                        ? AppColors.overdue
-                        : AppColors.surfaceContainerLow,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.button),
+                        ? palette.dangerContainer
+                        : palette.surfaceLow,
+                    borderRadius: BorderRadius.circular(AppRadius.button),
                   ),
                   child: Row(
                     children: [
@@ -184,16 +219,16 @@ class _BillCard extends ConsumerWidget {
                         Icons.calendar_today_outlined,
                         size: 14,
                         color: bill.status == BillStatus.overdue
-                            ? AppColors.onOverdue
-                            : AppColors.onSurfaceVariant,
+                            ? palette.danger
+                            : palette.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Hạn thanh toán: ${_fmtDate(bill.dueDate)}',
                         style: AppTypography.labelSM.copyWith(
                           color: bill.status == BillStatus.overdue
-                              ? AppColors.onOverdue
-                              : AppColors.onSurfaceVariant,
+                              ? palette.danger
+                              : palette.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -201,7 +236,8 @@ class _BillCard extends ConsumerWidget {
                 ),
 
                 // Payment Action Area
-                if (bill.status == BillStatus.unpaid && !bill.paymentSubmitted) ...[
+                if (bill.status == BillStatus.unpaid &&
+                    !bill.paymentSubmitted) ...[
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
                     text: 'Thanh toán qua VietQR',
@@ -217,14 +253,14 @@ class _BillCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusWidget() {
+  Widget _buildStatusWidget(AppPalette palette) {
     if (bill.status == BillStatus.unpaid && bill.paymentSubmitted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.amber.shade100,
+          color: palette.warningContainer,
           borderRadius: BorderRadius.circular(AppRadius.chip),
-          border: Border.all(color: Colors.amber.shade300),
+          border: Border.all(color: palette.warning.withValues(alpha: 0.45)),
         ),
         child: Text(
           'ĐANG CHỜ DUYỆT ⏳',
@@ -232,7 +268,7 @@ class _BillCard extends ConsumerWidget {
             fontFamily: AppTypography.fontFamily,
             fontSize: 9,
             fontWeight: FontWeight.w700,
-            color: Colors.amber.shade900,
+            color: palette.warning,
             letterSpacing: 0.5,
           ),
         ),
@@ -248,11 +284,12 @@ class _BillCard extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) {
         final landlordAsync = ref.watch(landlordByRoomProvider(bill.roomId));
+        final palette = context.palette;
 
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceContainerLowest,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: palette.surfaceLowest,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.only(
             top: AppSpacing.lg,
@@ -261,9 +298,10 @@ class _BillCard extends ConsumerWidget {
             bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
           ),
           child: landlordAsync.when(
-            loading: () => const SizedBox(
+            loading: () => SizedBox(
               height: 300,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              child: Center(
+                  child: CircularProgressIndicator(color: palette.primary)),
             ),
             error: (err, _) => SizedBox(
               height: 200,
@@ -273,14 +311,19 @@ class _BillCard extends ConsumerWidget {
               if (landlord == null) {
                 return const SizedBox(
                   height: 200,
-                  child: Center(child: Text('Không tìm thấy thông tin chủ trọ')),
+                  child:
+                      Center(child: Text('Không tìm thấy thông tin chủ trọ')),
                 );
               }
 
               final landlordPhone = landlord.phone.trim();
+              final bankAccount =
+                  landlordPhone.replaceAll(RegExp(r'\D'), '').isNotEmpty
+                      ? landlordPhone.replaceAll(RegExp(r'\D'), '')
+                      : '0901234567';
               final landlordName = landlord.fullName.toUpperCase();
               final totalAmount = bill.totalAmount;
-              
+
               final unaccentedRoom = bill.roomTitle
                   .replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a')
                   .replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e')
@@ -297,8 +340,17 @@ class _BillCard extends ConsumerWidget {
                   .replaceAll(RegExp(r'[ỲÝỴỶỸ]'), 'Y')
                   .replaceAll(RegExp(r'[Đ]'), 'D');
 
-              final transactionContent = 'THANH TOAN TIEN PHONG THANG ${bill.billingMonth.month} PHONG ${unaccentedRoom.replaceAll(' ', '')}';
-              final qrUrl = 'https://img.vietqr.io/image/MB/$landlordPhone-compact2.png?amount=$totalAmount&addInfo=${Uri.encodeComponent(transactionContent)}&accountName=${Uri.encodeComponent(landlordName)}';
+              final transactionContent =
+                  'THANH TOAN TIEN PHONG THANG ${bill.billingMonth.month} PHONG ${unaccentedRoom.replaceAll(' ', '')}';
+              final qrUrl = Uri.https(
+                'img.vietqr.io',
+                '/image/MB-$bankAccount-compact2.png',
+                {
+                  'amount': totalAmount.toString(),
+                  'addInfo': transactionContent,
+                  'accountName': landlordName,
+                },
+              ).toString();
 
               return SingleChildScrollView(
                 child: Column(
@@ -308,104 +360,108 @@ class _BillCard extends ConsumerWidget {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerHigh,
+                        color: palette.surfaceHigh,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    
                     Text(
                       'THANH TOÁN VIETQR',
                       style: AppTypography.titleMD.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
+                        color: palette.onSurface,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Chuyển tiền P2P trực tiếp bằng quét mã QR',
-                      style: AppTypography.bodySM.copyWith(color: AppColors.onSurfaceVariant),
+                      style: AppTypography.bodySM
+                          .copyWith(color: palette.onSurfaceVariant),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
+                        color: palette.surfaceLow,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                        border: Border.all(
+                            color:
+                                palette.outlineVariant.withValues(alpha: 0.5)),
                       ),
                       child: Column(
                         children: [
-                          _paymentInfoRow('Ngân hàng', 'MB BANK (Quân Đội)'),
-                          _paymentInfoRow('Tên chủ tài khoản', landlordName),
-                          _paymentInfoRow('Số tài khoản (SĐT)', landlordPhone),
-                          _paymentInfoRow('Số tiền chuyển', '${bill.totalAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}đ'),
-                          _paymentInfoRow('Nội dung chuyển khoản', transactionContent),
+                          _paymentInfoRow(
+                              'Ngân hàng', 'MB BANK (Quân Đội)', palette),
+                          _paymentInfoRow(
+                              'Tên chủ tài khoản', landlordName, palette),
+                          _paymentInfoRow('Số tài khoản', bankAccount, palette),
+                          _paymentInfoRow(
+                              'Số tiền chuyển',
+                              '${bill.totalAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}đ',
+                              palette),
+                          _paymentInfoRow('Nội dung chuyển khoản',
+                              transactionContent, palette),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: palette.qrSurface,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: const [AppShadows.card],
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 2),
+                        border: Border.all(
+                            color: palette.primary.withValues(alpha: 0.2),
+                            width: 2),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          qrUrl,
+                        child: SizedBox(
                           width: 240,
                           height: 240,
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const SizedBox(
-                              width: 240,
-                              height: 240,
-                              child: Center(
-                                child: CircularProgressIndicator(color: AppColors.primary),
-                              ),
-                            );
-                          },
-                          errorBuilder: (_, __, ___) => const SizedBox(
-                            width: 240,
-                            height: 240,
-                            child: Center(
-                              child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
+                          child: CachedNetworkImage(
+                            imageUrl: qrUrl,
+                            fit: BoxFit.contain,
+                            placeholder: (_, __) => Center(
+                              child: CircularProgressIndicator(
+                                  color: palette.primary),
+                            ),
+                            errorWidget: (_, __, ___) => Center(
+                              child: Icon(Icons.qr_code_2,
+                                  size: 100, color: palette.outline),
                             ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                        color: palette.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                        border: Border.all(
+                            color: palette.primary.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: AppColors.primary),
+                          Icon(Icons.info_outline, color: palette.primary),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Vui lòng mở ứng dụng ngân hàng quét mã QR trên để chuyển khoản. Mã QR đã điền sẵn số tiền & nội dung tự động.',
-                              style: AppTypography.bodySM.copyWith(fontWeight: FontWeight.w500),
+                              style: AppTypography.bodySM.copyWith(
+                                color: palette.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
-
                     AppButton(
                       text: 'Tôi đã chuyển khoản thành công',
                       icon: Icons.check_circle_outline,
@@ -415,15 +471,16 @@ class _BillCard extends ConsumerWidget {
                           await db.ref('bills/${bill.id}').update({
                             'paymentSubmitted': true,
                           });
-                          
+
                           ref.invalidate(tenantBillsProvider);
 
                           if (context.mounted) {
                             Navigator.of(context).pop(); // Close sheet
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Báo cáo thanh toán thành công! Vui lòng chờ Chủ trọ duyệt giao dịch ⏳'),
-                                backgroundColor: Color(0xFF2E7D32),
+                              SnackBar(
+                                content: const Text(
+                                    'Báo cáo thanh toán thành công! Vui lòng chờ Chủ trọ duyệt giao dịch ⏳'),
+                                backgroundColor: palette.success,
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -431,7 +488,9 @@ class _BillCard extends ConsumerWidget {
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
+                              SnackBar(
+                                  content: Text('Lỗi: $e'),
+                                  backgroundColor: palette.danger),
                             );
                           }
                         }
@@ -448,7 +507,7 @@ class _BillCard extends ConsumerWidget {
     );
   }
 
-  Widget _paymentInfoRow(String label, String value) {
+  Widget _paymentInfoRow(String label, String value, AppPalette palette) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -458,7 +517,8 @@ class _BillCard extends ConsumerWidget {
             flex: 2,
             child: Text(
               label,
-              style: AppTypography.bodySM.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTypography.bodySM
+                  .copyWith(color: palette.onSurfaceVariant),
             ),
           ),
           Expanded(
@@ -468,7 +528,7 @@ class _BillCard extends ConsumerWidget {
               textAlign: TextAlign.right,
               style: AppTypography.bodySM.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
+                color: palette.onSurface,
               ),
             ),
           ),
@@ -477,17 +537,22 @@ class _BillCard extends ConsumerWidget {
     );
   }
 
-  Widget _billRow(String label, int amount) {
+  Widget _billRow(String label, int amount, AppPalette palette) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTypography.bodyMD),
+          Text(
+            label,
+            style: AppTypography.bodyMD.copyWith(
+              color: palette.onSurfaceVariant,
+            ),
+          ),
           Text(
             '${_formatCurrency(amount)}đ',
             style: AppTypography.bodyMD.copyWith(
-              color: AppColors.onSurface,
+              color: palette.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -504,8 +569,8 @@ class _BillCard extends ConsumerWidget {
 
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 }

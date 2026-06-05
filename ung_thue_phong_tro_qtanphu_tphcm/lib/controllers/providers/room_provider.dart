@@ -232,7 +232,12 @@ final filteredRoomsProvider = Provider<List<Room>>((ref) {
 });
 
 final roomByIdProvider = Provider.family<Room?, String>((ref, id) {
-  return ref.watch(roomProvider.notifier).getRoomById(id);
+  final rooms = ref.watch(roomProvider).rooms;
+  try {
+    return rooms.firstWhere((room) => room.id == id);
+  } catch (_) {
+    return null;
+  }
 });
 
 // Districts list

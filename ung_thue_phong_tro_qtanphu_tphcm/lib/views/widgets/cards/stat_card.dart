@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 
 // ═══════════════════════════════════════════
@@ -24,11 +25,12 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       width: 160,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: palette.surfaceLowest,
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: const [AppShadows.card],
       ),
@@ -40,13 +42,15 @@ class StatCard extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: iconColor ?? AppColors.primary,
+                color: iconColor ?? palette.primary,
               ),
               const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.bodySM,
+                  style: AppTypography.bodySM.copyWith(
+                    color: palette.onSurfaceVariant,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -58,14 +62,16 @@ class StatCard extends StatelessWidget {
             value,
             style: AppTypography.headlineLG.copyWith(
               fontSize: 28,
-              color: valueColor ?? AppColors.onSurface,
+              color: valueColor ?? palette.onSurface,
             ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 2),
             Text(
               subtitle!,
-              style: AppTypography.bodySM,
+              style: AppTypography.bodySM.copyWith(
+                color: palette.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -93,13 +99,14 @@ class InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: padding ?? const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: color ?? AppColors.surfaceContainerLowest,
+          color: color ?? palette.surfaceLowest,
           borderRadius: BorderRadius.circular(AppRadius.card),
           boxShadow: const [AppShadows.card],
         ),

@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../repositories/storage_repository.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/theme_mode_selector.dart';
 
 class LandlordProfileScreen extends ConsumerStatefulWidget {
   const LandlordProfileScreen({super.key});
 
   @override
-  ConsumerState<LandlordProfileScreen> createState() => _LandlordProfileScreenState();
+  ConsumerState<LandlordProfileScreen> createState() =>
+      _LandlordProfileScreenState();
 }
 
 class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
@@ -33,7 +36,8 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
     final user = ref.read(currentUserProvider);
     _fullNameCtrl = TextEditingController(text: user?.fullName ?? '');
     _phoneCtrl = TextEditingController(text: user?.phone ?? '');
-    _birthYearCtrl = TextEditingController(text: user?.birthYear?.toString() ?? '');
+    _birthYearCtrl =
+        TextEditingController(text: user?.birthYear?.toString() ?? '');
     _hometownCtrl = TextEditingController(text: user?.hometown ?? '');
     _occupationCtrl = TextEditingController(text: user?.occupation ?? '');
     _bioCtrl = TextEditingController(text: user?.bio ?? '');
@@ -71,8 +75,9 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
       if (user == null) return;
 
       final storageRepo = ref.read(storageRepositoryProvider);
-      final newUrl = await storageRepo.uploadRoomImage(user.id, File(image.path));
-      
+      final newUrl =
+          await storageRepo.uploadRoomImage(user.id, File(image.path));
+
       setState(() {
         _avatarUrl = newUrl;
       });
@@ -154,9 +159,10 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final user = authState.user;
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       appBar: AppBar(
         title: const Text('Hồ sơ của tôi'),
         leading: IconButton(
@@ -177,17 +183,18 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 56,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                        ? NetworkImage(_avatarUrl!)
-                        : null,
+                    backgroundColor: palette.primary.withValues(alpha: 0.14),
+                    backgroundImage:
+                        _avatarUrl != null && _avatarUrl!.isNotEmpty
+                            ? NetworkImage(_avatarUrl!)
+                            : null,
                     child: _avatarUrl == null || _avatarUrl!.isEmpty
                         ? Text(
                             user?.fullName.isNotEmpty == true
                                 ? user!.fullName[0].toUpperCase()
                                 : 'C',
                             style: AppTypography.headlineLG.copyWith(
-                              color: AppColors.primary,
+                              color: palette.primary,
                               fontSize: 36,
                             ),
                           )
@@ -228,7 +235,9 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
               const SizedBox(height: 8),
               Text(
                 user?.email ?? '',
-                style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+                style: AppTypography.bodyMD.copyWith(
+                  color: palette.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
 
@@ -236,7 +245,7 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
+                  color: palette.surfaceLowest,
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   boxShadow: const [AppShadows.card],
                 ),
@@ -249,8 +258,9 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                         labelText: 'Họ và tên *',
                         prefixIcon: Icon(Icons.person_outline, size: 20),
                       ),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Vui lòng nhập họ tên' : null,
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Vui lòng nhập họ tên'
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.md),
 
@@ -263,8 +273,9 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                         hintText: 'VD: 090xxxxxxx',
                       ),
                       keyboardType: TextInputType.phone,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Vui lòng nhập số điện thoại' : null,
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Vui lòng nhập số điện thoại'
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.md),
 
@@ -300,7 +311,9 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                       validator: (v) {
                         if (v != null && v.isNotEmpty) {
                           final val = int.tryParse(v);
-                          if (val == null || val < 1940 || val > DateTime.now().year) {
+                          if (val == null ||
+                              val < 1940 ||
+                              val > DateTime.now().year) {
                             return 'Năm sinh không hợp lệ';
                           }
                         }
@@ -341,7 +354,8 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                           padding: EdgeInsets.only(bottom: 24),
                           child: Icon(Icons.edit_note_outlined, size: 20),
                         ),
-                        hintText: 'VD: Vui tính, thân thiện, luôn hỗ trợ người thuê hết mình!',
+                        hintText:
+                            'VD: Vui tính, thân thiện, luôn hỗ trợ người thuê hết mình!',
                         alignLabelWithHint: true,
                       ),
                     ),
@@ -359,6 +373,8 @@ class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: AppSpacing.xl),
+              const ThemeModeSelector(),
               const SizedBox(height: AppSpacing.xl),
 
               // Submit Button

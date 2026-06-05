@@ -1,26 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
+import '../../../controllers/providers/bill_provider.dart';
 
 // ═══════════════════════════════════════════
 // LANDLORD SCAFFOLD — Bottom navigation bar cho chủ trọ
 // ═══════════════════════════════════════════
-class LandlordScaffold extends StatelessWidget {
+class LandlordScaffold extends ConsumerWidget {
   final Widget child;
 
   const LandlordScaffold({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
     final currentIndex = _getIndex(location);
+    final pendingPaymentCount = ref
+        .watch(pendingPaymentBillsProvider)
+        .maybeWhen(data: (bills) => bills.length, orElse: () => 0);
+    final palette = context.palette;
 
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          boxShadow: [AppShadows.bottomSheet],
+        decoration: BoxDecoration(
+          color: palette.surfaceLowest,
+          boxShadow: const [AppShadows.bottomSheet],
         ),
         child: SafeArea(
           top: false,
@@ -34,6 +41,7 @@ class LandlordScaffold extends StatelessWidget {
                   activeIcon: Icons.home_work,
                   label: 'Tổng quan',
                   isActive: currentIndex == 0,
+                  palette: palette,
                   onTap: () => context.go('/landlord'),
                 ),
                 _navItem(
@@ -42,6 +50,7 @@ class LandlordScaffold extends StatelessWidget {
                   activeIcon: Icons.meeting_room,
                   label: 'Phòng trọ',
                   isActive: currentIndex == 1,
+                  palette: palette,
                   onTap: () => context.go('/landlord/rooms'),
                 ),
                 // FAB — Thêm phòng
@@ -53,13 +62,20 @@ class LandlordScaffold extends StatelessWidget {
                         width: 52,
                         height: 52,
                         decoration: BoxDecoration(
-                          gradient: AppGradients.primaryFab,
+                          gradient: LinearGradient(
+                            colors: [
+                              palette.primary,
+                              palette.primaryContainer,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(AppRadius.chip),
                           boxShadow: const [AppShadows.fab],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.add,
-                          color: AppColors.onPrimary,
+                          color: palette.onPrimary,
                           size: 28,
                         ),
                       ),
@@ -72,6 +88,8 @@ class LandlordScaffold extends StatelessWidget {
                   activeIcon: Icons.people,
                   label: 'Người thuê',
                   isActive: currentIndex == 3,
+                  badgeCount: pendingPaymentCount,
+                  palette: palette,
                   onTap: () => context.go('/landlord/tenants'),
                 ),
                 _navItem(
@@ -80,6 +98,7 @@ class LandlordScaffold extends StatelessWidget {
                   activeIcon: Icons.receipt_long,
                   label: 'Hóa đơn',
                   isActive: currentIndex == 4,
+                  palette: palette,
                   onTap: () => context.go('/landlord/create-bill'),
                 ),
               ],
@@ -105,7 +124,9 @@ class LandlordScaffold extends StatelessWidget {
     required IconData activeIcon,
     required String label,
     required bool isActive,
+    required AppPalette palette,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -114,18 +135,22 @@ class LandlordScaffold extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              size: 24,
+            Badge(
+              label: Text('$badgeCount'),
+              isLabelVisible: badgeCount > 0,
+              backgroundColor: palette.danger,
+              child: Icon(
+                isActive ? activeIcon : icon,
+                color: isActive ? palette.primary : palette.onSurfaceVariant,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
               label,
               style: AppTypography.labelSM.copyWith(
                 fontSize: 10,
-                color:
-                    isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+                color: isActive ? palette.primary : palette.onSurfaceVariant,
               ),
             ),
           ],

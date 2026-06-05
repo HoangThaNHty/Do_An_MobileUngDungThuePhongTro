@@ -1,5 +1,19 @@
 {
   "users": {
+    "ADMIN_DEMO_UID": {
+      "id": "ADMIN_DEMO_UID",
+      "fullName": "Admin Hệ Thống",
+      "email": "admin.demo@email.com",
+      "phone": "0987654321",
+      "role": "admin",
+      "avatarUrl": "https://i.pravatar.cc/150?img=12",
+      "createdAt": "2026-05-01T07:30:00.000Z",
+      "gender": "Khác",
+      "birthYear": 1995,
+      "hometown": "TP.HCM",
+      "occupation": "Quản trị hệ thống",
+      "bio": "Tài khoản admin demo chỉ dùng để giám sát tổng quan dữ liệu hệ thống."
+    },
     "LANDLORD_DEMO_UID": {
       "id": "LANDLORD_DEMO_UID",
       "fullName": "Nguyễn Văn An",

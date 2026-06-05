@@ -11,22 +11,22 @@ class AppColors {
   static const Color onPrimaryContainer = Color(0xFFFFFFFF);
 
   // Surface — Tonal Layering
-  static const Color surface = Color(0xFFF9F9F9);           // Background
-  static const Color surfaceContainerLow = Color(0xFFF3F3F3);    // Content areas
+  static const Color surface = Color(0xFFF9F9F9); // Background
+  static const Color surfaceContainerLow = Color(0xFFF3F3F3); // Content areas
   static const Color surfaceContainerLowest = Color(0xFFFFFFFF); // Cards
-  static const Color surfaceContainerHigh = Color(0xFFE8E8E8);   // Hover/divider
+  static const Color surfaceContainerHigh = Color(0xFFE8E8E8); // Hover/divider
 
   // Text
-  static const Color onSurface = Color(0xFF1A1C1C);         // Primary text
-  static const Color onSurfaceVariant = Color(0xFF414752);   // Secondary text
+  static const Color onSurface = Color(0xFF1A1C1C); // Primary text
+  static const Color onSurfaceVariant = Color(0xFF414752); // Secondary text
 
   // Status Chips — Pastel
-  static const Color available = Color(0xFF94F990);          // CÒN TRỐNG bg
-  static const Color onAvailable = Color(0xFF002204);        // CÒN TRỐNG text
-  static const Color rented = Color(0xFFE3E2E2);             // ĐÃ THUÊ bg
-  static const Color onRented = Color(0xFF646464);           // ĐÃ THUÊ text
-  static const Color overdue = Color(0xFFFFDAD6);            // QUÁ HẠN bg
-  static const Color onOverdue = Color(0xFF93000A);          // QUÁ HẠN text
+  static const Color available = Color(0xFF94F990); // CÒN TRỐNG bg
+  static const Color onAvailable = Color(0xFF002204); // CÒN TRỐNG text
+  static const Color rented = Color(0xFFE3E2E2); // ĐÃ THUÊ bg
+  static const Color onRented = Color(0xFF646464); // ĐÃ THUÊ text
+  static const Color overdue = Color(0xFFFFDAD6); // QUÁ HẠN bg
+  static const Color onOverdue = Color(0xFF93000A); // QUÁ HẠN text
 
   // Outline
   static const Color outline = Color(0xFF717783);
@@ -78,7 +78,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 32,
     fontWeight: FontWeight.w700,
-    color: AppColors.onSurface,
     height: 1.2,
     letterSpacing: -0.5,
   );
@@ -87,7 +86,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.w700,
-    color: AppColors.onSurface,
     height: 1.25,
   );
 
@@ -95,7 +93,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w600,
-    color: AppColors.onSurface,
     height: 1.3,
   );
 
@@ -103,7 +100,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: AppColors.onSurface,
     height: 1.35,
   );
 
@@ -111,7 +107,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    color: AppColors.onSurfaceVariant,
     height: 1.5,
   );
 
@@ -119,7 +114,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w400,
-    color: AppColors.onSurfaceVariant,
     height: 1.4,
   );
 
@@ -127,7 +121,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 11,
     fontWeight: FontWeight.w600,
-    color: AppColors.onSurfaceVariant,
     height: 1.4,
     letterSpacing: 0.5,
   );
@@ -136,7 +129,6 @@ class AppTypography {
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.onPrimary,
     height: 1.0,
   );
 
@@ -297,4 +289,3 @@ extension CurrencyExtension on int {
     );
   }
 }
-

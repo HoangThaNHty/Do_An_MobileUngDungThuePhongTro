@@ -13,14 +13,6 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // System UI overlay
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
-
   // Firebase initialization
   try {
     await Firebase.initializeApp();

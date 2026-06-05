@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 import '../../../controllers/auth_controller.dart';
+import '../../../controllers/booking_controller.dart';
+import '../../../controllers/providers/bill_provider.dart';
 import '../../../controllers/providers/room_provider.dart';
 import '../../../controllers/providers/create_room_provider.dart';
 import '../../widgets/cards/room_card.dart';
+import '../../../models/entities/bill.dart';
 import '../../../models/entities/room.dart';
 import '../../../controllers/chat_controller.dart';
 import 'package:shimmer/shimmer.dart';
@@ -34,15 +38,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final districts = ref.watch(districtsProvider);
     final user = ref.watch(currentUserProvider);
     final unreadCount = ref.watch(unreadChatsCountProvider);
+    final tenantBills = ref.watch(tenantBillsProvider).maybeWhen(
+          data: (bills) => bills,
+          orElse: () => const <Bill>[],
+        );
+    final payableBills = tenantBills
+        .where((bill) =>
+            bill.status == BillStatus.unpaid &&
+            !bill.paymentSubmitted &&
+            !isDepositBill(bill))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final waitingApprovalBills = tenantBills
+        .where((bill) =>
+            bill.status == BillStatus.unpaid &&
+            bill.paymentSubmitted &&
+            !isDepositBill(bill))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             await Future.delayed(const Duration(milliseconds: 500));
           },
-          color: AppColors.primary,
+          color: palette.primary,
           child: CustomScrollView(
             slivers: [
               // ─── App Bar ───────────────────────────
@@ -71,10 +94,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Badge(
                         label: Text('$unreadCount'),
                         isLabelVisible: unreadCount > 0,
-                        backgroundColor: AppColors.error,
+                        backgroundColor: palette.danger,
                         child: IconButton(
                           icon: const Icon(Icons.chat_bubble_outline),
-                          color: AppColors.onSurfaceVariant,
+                          color: palette.onSurfaceVariant,
                           onPressed: () => context.push('/chat-list'),
                         ),
                       ),
@@ -85,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: CircleAvatar(
                           radius: 22,
                           backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.12),
+                              palette.primary.withValues(alpha: 0.12),
                           backgroundImage: user?.avatarUrl != null &&
                                   user!.avatarUrl!.isNotEmpty
                               ? NetworkImage(user.avatarUrl!)
@@ -97,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ? user!.fullName[0].toUpperCase()
                                       : 'U',
                                   style: AppTypography.titleSM.copyWith(
-                                    color: AppColors.primary,
+                                    color: palette.primary,
                                   ),
                                 )
                               : null,
@@ -108,6 +131,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
+              if (payableBills.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildBillNotice(
+                    context,
+                    bill: payableBills.first,
+                    count: payableBills.length,
+                    isWaitingApproval: false,
+                  ),
+                )
+              else if (waitingApprovalBills.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildBillNotice(
+                    context,
+                    bill: waitingApprovalBills.first,
+                    count: waitingApprovalBills.length,
+                    isWaitingApproval: true,
+                  ),
+                ),
+
               // ─── Search Bar ────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -115,16 +157,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Container(
                     height: 52,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
+                      color: palette.surfaceLowest,
                       borderRadius: BorderRadius.circular(AppRadius.button),
                       boxShadow: const [AppShadows.card],
                     ),
                     child: Row(
                       children: [
                         const SizedBox(width: AppSpacing.md),
-                        const Icon(
+                        Icon(
                           Icons.search,
-                          color: AppColors.onSurfaceVariant,
+                          color: palette.onSurfaceVariant,
                           size: 22,
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -132,7 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: TextField(
                             controller: _searchCtrl,
                             style: AppTypography.bodyMD.copyWith(
-                              color: AppColors.onSurface,
+                              color: palette.onSurface,
                             ),
                             decoration: const InputDecoration(
                               hintText: AppStrings.search,
@@ -156,9 +198,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         // Filter icon
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.tune_outlined,
-                            color: AppColors.onSurfaceVariant,
+                            color: palette.onSurfaceVariant,
                             size: 22,
                           ),
                           onPressed: () => context.go('/tenant/search'),
@@ -200,9 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           decoration: BoxDecoration(
                             gradient:
                                 isSelected ? AppGradients.primaryButton : null,
-                            color: isSelected
-                                ? null
-                                : AppColors.surfaceContainerLowest,
+                            color: isSelected ? null : palette.surfaceLowest,
                             borderRadius: BorderRadius.circular(AppRadius.chip),
                             boxShadow:
                                 isSelected ? null : const [AppShadows.card],
@@ -212,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: AppTypography.labelSM.copyWith(
                               color: isSelected
                                   ? AppColors.onPrimary
-                                  : AppColors.onSurfaceVariant,
+                                  : palette.onSurfaceVariant,
                               fontSize: 12,
                             ),
                           ),
@@ -233,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       vertical: AppSpacing.md,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
+                      color: palette.surfaceLow,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     child: Row(
@@ -250,7 +290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 '${roomState.rooms.where((r) => r.status == RoomStatus.available).length}',
                                 style: AppTypography.headlineLG.copyWith(
                                   fontSize: 28,
-                                  color: AppColors.primary,
+                                  color: palette.primary,
                                 ),
                               ),
                             ],
@@ -323,12 +363,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       (context, index) => Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: Shimmer.fromColors(
-                          baseColor: AppColors.surfaceContainerLow,
-                          highlightColor: AppColors.surfaceContainerLowest,
+                          baseColor: palette.surfaceLow,
+                          highlightColor: palette.surfaceLowest,
                           child: Container(
                             height: 112,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: palette.surfaceLowest,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.card),
                             ),
@@ -385,7 +425,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/tenant/ai-copilot'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.palette.primary,
         icon: const Icon(Icons.psychology, color: AppColors.onPrimary),
         label: const Text(
           'AI Copilot',
@@ -399,6 +439,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildBillNotice(
+    BuildContext context, {
+    required Bill bill,
+    required int count,
+    required bool isWaitingApproval,
+  }) {
+    final palette = context.palette;
+    final accent = isWaitingApproval ? palette.warning : palette.danger;
+    final container =
+        isWaitingApproval ? palette.warningContainer : palette.dangerContainer;
+    final title = isWaitingApproval
+        ? 'Đang chờ chủ trọ duyệt thanh toán'
+        : 'Có hóa đơn mới cần thanh toán';
+    final message = isWaitingApproval
+        ? 'Bạn đã báo chuyển khoản ${bill.totalAmount.toVnd()}đ cho phòng ${bill.roomTitle}.'
+        : '${count > 1 ? '$count hóa đơn chưa thanh toán. Gần nhất: ' : ''}${bill.roomTitle} - ${bill.totalAmount.toVnd()}đ, hạn ${_fmtDate(bill.dueDate)}.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: container,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: accent.withValues(alpha: 0.45)),
+          boxShadow: const [AppShadows.card],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isWaitingApproval
+                  ? Icons.hourglass_top_outlined
+                  : Icons.receipt_long_outlined,
+              color: accent,
+              size: 26,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.bodyMD.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: AppTypography.bodySM.copyWith(
+                      color: accent,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            ElevatedButton(
+              onPressed: () => context.go('/tenant/rentals'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor:
+                    isWaitingApproval ? palette.onWarning : palette.onDanger,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: Size.zero,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.button),
+                ),
+              ),
+              child: Text(
+                isWaitingApproval ? 'Xem' : 'Thanh toán',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
   void _showProfileSheet(BuildContext context) {
     final user = ref.read(currentUserProvider);
     showModalBottomSheet(
@@ -410,7 +542,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             CircleAvatar(
               radius: 36,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              backgroundColor: context.palette.primary.withValues(alpha: 0.12),
               backgroundImage:
                   user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
                       ? NetworkImage(user.avatarUrl!)
@@ -421,7 +553,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ? user!.fullName[0].toUpperCase()
                           : 'U',
                       style: AppTypography.headlineMD.copyWith(
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     )
                   : null,

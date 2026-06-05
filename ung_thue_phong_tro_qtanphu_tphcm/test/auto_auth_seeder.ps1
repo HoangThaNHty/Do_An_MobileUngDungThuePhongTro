@@ -11,6 +11,7 @@ Write-Host "==========================================================" -Foregro
 
 # Define demo users with their roles and template placeholders
 $mockUsers = @(
+    @{ email = "admin.demo@email.com"; placeholder = "ADMIN_DEMO_UID"; role = "Admin System Supervisor" },
     @{ email = "chutro.demo@email.com"; placeholder = "LANDLORD_DEMO_UID"; role = "Landlord Nguyen Van An" },
     @{ email = "khang.demo@email.com"; placeholder = "TENANT_KHANG_UID"; role = "New Tenant Tran Minh Khang" },
     @{ email = "mai.demo@email.com"; placeholder = "TENANT_MAI_UID"; role = "New Tenant Le Ngoc Mai" }
@@ -76,8 +77,8 @@ foreach ($placeholder in $uidMap.Keys) {
     Write-Host "   $placeholder ==> $($uidMap[$placeholder])" -ForegroundColor Gray
 }
 
-# Ensure all 3 demo accounts have been mapped
-if ($uidMap.Count -lt 3) {
+# Ensure all 4 demo accounts have been mapped
+if ($uidMap.Count -lt 4) {
     Write-Host "[WARN] Warning: Not all demo accounts were successfully synced or created. Database placeholders will not be fully replaced." -ForegroundColor Yellow
 }
 
@@ -113,9 +114,10 @@ try {
     Write-Host "[SUCCESS] SUCCESS! Firebase Realtime Database has been seeded with clean presentation demo data." -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
     Write-Host "[CREDENTIALS] DEMO CREDENTIALS (PASSWORD: 123456 FOR ALL):" -ForegroundColor White
-    Write-Host "   1. Chu tro Nguyen Van An:     chutro.demo@email.com" -ForegroundColor White
-    Write-Host "   2. Nguoi thue moi Minh Khang: khang.demo@email.com" -ForegroundColor White
-    Write-Host "   3. Nguoi thue moi Ngoc Mai:   mai.demo@email.com" -ForegroundColor White
+    Write-Host "   1. Admin he thong:            admin.demo@email.com" -ForegroundColor White
+    Write-Host "   2. Chu tro Nguyen Van An:     chutro.demo@email.com" -ForegroundColor White
+    Write-Host "   3. Nguoi thue moi Minh Khang: khang.demo@email.com" -ForegroundColor White
+    Write-Host "   4. Nguoi thue moi Ngoc Mai:   mai.demo@email.com" -ForegroundColor White
     Write-Host "" -ForegroundColor White
     Write-Host "[DATA] Rooms: 6 available rooms. Chats/Rentals/Bills/Reviews: empty for a clean demo flow." -ForegroundColor White
     Write-Host "==========================================================" -ForegroundColor Green

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../config/app_palette.dart';
 import '../../../config/constants.dart';
 
 // ═══════════════════════════════════════════
@@ -14,13 +15,14 @@ class TenantScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     final currentIndex = _getIndex(location);
+    final palette = context.palette;
 
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          boxShadow: [AppShadows.bottomSheet],
+        decoration: BoxDecoration(
+          color: palette.surfaceLowest,
+          boxShadow: const [AppShadows.bottomSheet],
         ),
         child: SafeArea(
           top: false,
@@ -34,6 +36,7 @@ class TenantScaffold extends StatelessWidget {
                   activeIcon: Icons.explore,
                   label: AppStrings.explore,
                   isActive: currentIndex == 0,
+                  palette: palette,
                   onTap: () => context.go('/tenant'),
                 ),
                 _navItem(
@@ -42,6 +45,7 @@ class TenantScaffold extends StatelessWidget {
                   activeIcon: Icons.search,
                   label: 'Tìm kiếm',
                   isActive: currentIndex == 1,
+                  palette: palette,
                   onTap: () => context.go('/tenant/search'),
                 ),
                 // FAB center
@@ -53,14 +57,20 @@ class TenantScaffold extends StatelessWidget {
                         width: 52,
                         height: 52,
                         decoration: BoxDecoration(
-                          gradient: AppGradients.primaryFab,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.chip),
+                          gradient: LinearGradient(
+                            colors: [
+                              palette.primary,
+                              palette.primaryContainer,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
                           boxShadow: const [AppShadows.fab],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.map_outlined,
-                          color: AppColors.onPrimary,
+                          color: palette.onPrimary,
                           size: 24,
                         ),
                       ),
@@ -73,6 +83,7 @@ class TenantScaffold extends StatelessWidget {
                   activeIcon: Icons.calendar_month,
                   label: AppStrings.rentals,
                   isActive: currentIndex == 3,
+                  palette: palette,
                   onTap: () => context.go('/tenant/rentals'),
                 ),
                 _navItem(
@@ -81,6 +92,7 @@ class TenantScaffold extends StatelessWidget {
                   activeIcon: Icons.person,
                   label: AppStrings.profile,
                   isActive: currentIndex == 4,
+                  palette: palette,
                   onTap: () => context.go('/tenant/profile'),
                 ),
               ],
@@ -106,6 +118,7 @@ class TenantScaffold extends StatelessWidget {
     required IconData activeIcon,
     required String label,
     required bool isActive,
+    required AppPalette palette,
     required VoidCallback onTap,
   }) {
     return Expanded(
@@ -117,7 +130,7 @@ class TenantScaffold extends StatelessWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+              color: isActive ? palette.primary : palette.onSurfaceVariant,
               size: 24,
             ),
             const SizedBox(height: 3),
@@ -125,9 +138,7 @@ class TenantScaffold extends StatelessWidget {
               label,
               style: AppTypography.labelSM.copyWith(
                 fontSize: 10,
-                color: isActive
-                    ? AppColors.primary
-                    : AppColors.onSurfaceVariant,
+                color: isActive ? palette.primary : palette.onSurfaceVariant,
               ),
             ),
           ],
